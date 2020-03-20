@@ -3,7 +3,11 @@ import json
 import urllib
 
 
+CLIENT_ID = "TODO"
+CLIENT_SECRET = "TODO"
+
 BASE_URL = "https://slack.com/api/oauth.access"
+EXPECTED_REDIRECT = "https://watercooler.express/chat"
 
 
 def endpoint(event, context):
@@ -19,20 +23,25 @@ def endpoint(event, context):
     #     "scope": "identity.basic",
     #     "team_id": "T0G9PQBBK"
     # }
+    if event["pathParameters"].get("error") is not None:
+        return {"statusCode": 403, "body": "Oauth Error Reported by slack"}
 
     params = urllib.parse.urlencode({
-        'CLIENT_ID': "TODO1",
-        'client_secret': "TODO2",
-        'code': "TODO3"
+        "client_id": CLIENT_ID,
+        "client_secret": CLIENT_SECRET,
+        "code": "TODO3"
     })
 
     full_url = "{BASE_URL}?{PARAMS}".format(BASE_URL=BASE_URL, params=params)
     # TODO failed auth here.
-    urllib.urlopen(full_url)
+    try:
+        result = json.dumps(urllib.urlopen(full_url).data)
+    except urllib.error.URLError:
+        return {"statusCode": 403, "body": "Oauth Error !?!?!?"}
 
     body = {
          "ok": True,
-         "access_token": "fooplaceholder",
+         "access_token": result["access_token"],
          "scope": "identity.basic",
          "team_id": "FooTeamID"
     }

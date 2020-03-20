@@ -1,5 +1,9 @@
 import time
 import json
+import urllib
+
+
+BASE_URL = "https://slack.com/api/oauth.access"
 
 
 def endpoint(event, context):
@@ -15,6 +19,16 @@ def endpoint(event, context):
     #     "scope": "identity.basic",
     #     "team_id": "T0G9PQBBK"
     # }
+
+    params = urllib.parse.urlencode({
+        'CLIENT_ID': "TODO1",
+        'client_secret': "TODO2",
+        'code': "TODO3"
+    })
+
+    full_url = "{BASE_URL}?{PARAMS}".format(BASE_URL=BASE_URL, params=params)
+    # TODO failed auth here.
+    urllib.urlopen(full_url)
 
     body = {
          "ok": True,

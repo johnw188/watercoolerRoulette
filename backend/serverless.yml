@@ -1,4 +1,4 @@
-service: aws-python-simple-http-endpoint
+service: watercooler-express
 
 frameworkVersion: ">=1.2.0 <2.0.0"
 
@@ -19,10 +19,8 @@ functions:
     handler: handlers/auth.endpoint
     events:
       - http:
-        path: auth
-        method: get
-  
-  
+          path: auth
+          method: get
 
 resources:
   # DynamoDB

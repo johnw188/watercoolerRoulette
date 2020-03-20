@@ -8,12 +8,21 @@ provider:
   runtime: python3.7 # or python3.7, supported as of November 2018
 
 functions:
-  currentTime:
-    handler: handler.endpoint
+  ping:
+    handler: handlers/presence.endpoint
     events:
       - http:
           path: ping
           method: get
+
+  auth:
+    handler: handlers/auth.endpoint
+    events:
+      - http:
+        path: auth
+        method: get
+  
+  
 
 resources:
   # DynamoDB

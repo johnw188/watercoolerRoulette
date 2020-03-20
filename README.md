@@ -7,7 +7,7 @@ This is a project to match users for one minute video chats
 Install the dependencies...
 
 ```bash
-cd svelte-app
+cd frontend
 npm install
 ```
 

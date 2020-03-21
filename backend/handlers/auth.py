@@ -6,6 +6,7 @@ import traceback
 import requests
 import boto3
 
+TABLE_PREFIX = os.environ["DYNAMO_TABLE_PREFIX"]
 CLIENT_ID = os.environ["OAUTH_ID"]
 CLIENT_SECRET = os.environ["OAUTH_SECRET"]
 
@@ -18,8 +19,7 @@ AUTH_TEST = "https://api.slack.com/api/auth.test"
 # TODO: make me a helper generally
 def get_dynamo_table(table_name: str):
     dynamodb = boto3.resource('dynamodb')
-    prefix = os.environ["DYNAMODB_TABLE_PREFIX"]
-    return dynamodb.Table(prefix + "-" + table_name)
+    return dynamodb.Table(TABLE_PREFIX + "-" + table_name)
 
 
 def get_or_create_user(
@@ -30,7 +30,7 @@ def get_or_create_user(
         slack_team: str,
         slack_url: str):
     # Hard overwrite, YOLO
-    table = get_dynamo_table("users")
+    table = get_dynamo_table(USERS_TABLE)
     table.put_item(Item={
         'user_id': user_id,
         'team_id': team_id,
@@ -66,7 +66,7 @@ def _endpoint(event, context):
     }
 
     try:
-        auth_result = requests.get(AUTH_CB, params=auth_params).json()
+        auth_result = requests.post(AUTH_CB, data=auth_params).json()
     except urllib.error.URLError:
         return {"statusCode": 403, "body": "OAuth seems invald"}
 

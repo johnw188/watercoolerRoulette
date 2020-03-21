@@ -26,18 +26,18 @@ provider:
 
 functions:
   ping:
-    handler: handlers/presence.endpoint
+    handler: lambdae/presence.endpoint
     events:
       - http:
           path: ping
           method: get
 
   auth:
-    handler: handlers/auth.endpoint
+    handler: lambdae/auth.endpoint
     environment:
       OAUTH_ID: ${env:OAUTH_ID}
       OAUTH_SECRET: ${env:OAUTH_SECRET}
-      DYNAMODB_TABLE_PREFIX: ${opt:stage}
+      USERS_TABLE: ${self:provider.environment.USERS_TABLE} 
     events:
       - http:
           path: auth

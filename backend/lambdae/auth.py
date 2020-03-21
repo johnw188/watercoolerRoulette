@@ -3,7 +3,7 @@ import urllib.parse
 import os
 import traceback
 
-import lambdae.shared
+import lambdae.shared as shared
 
 import requests
 import boto3
@@ -12,12 +12,12 @@ USERS_TABLE = os.environ["USERS_TABLE"]
 CLIENT_ID = os.environ["OAUTH_ID"]
 CLIENT_SECRET = os.environ["OAUTH_SECRET"]
 
-AUTH_CB = "https://slack.com/api/oauth.access"
 EXPECTED_REDIRECT = "https://watercooler.express/chat"
 
-AUTH_TEST = "https://api.slack.com/api/auth.test"
+AUTH_CB_API = "https://slack.com/api/oauth.access"
+AUTH_TEST_API = "https://api.slack.com/api/auth.test"
+USER_INFO_API = "https://slack.com/api/users.profile.get"
 
-USER_INFO = "https://slack.com/api/users.profile.get"
 
 # TODO: make me a helper generally
 def get_dynamo_table(table_name: str):
@@ -71,7 +71,7 @@ def _endpoint(event, context):
     }
 
     try:
-        auth_result = requests.post(AUTH_CB, data=auth_params).json()
+        auth_result = requests.post(AUTH_CB_API, data=auth_params).json()
     except urllib.error.URLError:
         return {"statusCode": 403, "body": "OAuth seems invald"}
 
@@ -84,7 +84,7 @@ def _endpoint(event, context):
     }
     # Slack said ok, find out their team identity
     try:
-        team_result = requests.post(AUTH_TEST, headers=headers).json()
+        team_result = requests.post(AUTH_TEST_API, headers=headers).json()
     except urllib.error.URLError:
         return {"statusCode": 403, "body": "Unable to get identity"}
 
@@ -92,12 +92,11 @@ def _endpoint(event, context):
 
     # Also pull down their avatar
     try:
-        profile_resp = requests.get(USER_INFO, headers=headers).json()
+        profile_resp = requests.get(USER_INFO_API, headers=headers).json()
     except urllib.error.URLError:
         return {"statusCode": 403, "body": "Unable to get avatar"}
 
     assert profile_resp["ok"], profile_resp
-    avatar_url = profile_resp["profile"]["image_192"]
 
     # Expected `team_result` format
     # {
@@ -109,7 +108,7 @@ def _endpoint(event, context):
     #     "user_id": "W12345678"
     # }
 
-    get_or_create_user(
+    user = shared.UsersModel(
         user_id=team_result["user_id"],
         team_id=team_result["team_id"],
         slack_username=team_result["user"],
@@ -117,7 +116,9 @@ def _endpoint(event, context):
         slack_url=team_result["url"],
         slack_avatar=profile_resp["profile"]["image_192"]
     )
-    # TODO: Issue JWT token here
+    user.save()
+
+    # Shoot the user a cookie with their JWT token, and redirect
     response_headers = {"Location": "https://watercooler.express/chat"}
-    response_headers.update(lambdae.shared.get_token_for_user())
+    response_headers.update(user.get_jwt_token_header())
     return {"statusCode": 302, "headers": response_headers}

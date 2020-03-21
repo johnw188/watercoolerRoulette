@@ -37,6 +37,7 @@ functions:
     environment:
       OAUTH_ID: ${env:OAUTH_ID}
       OAUTH_SECRET: ${env:OAUTH_SECRET}
+      JWT_SECRET: TODOCONFIGME123456789
       USERS_TABLE: ${self:provider.environment.USERS_TABLE} 
     events:
       - http:

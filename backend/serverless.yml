@@ -17,10 +17,17 @@ functions:
 
   auth:
     handler: handlers/auth.endpoint
+    environment:
+      OAUTH_ID: ${env:OAUTH_ID}
+      OAUTH_SECRET: ${env:OAUTH_SECRET}
+      DYNAMODB_TABLE_PREFIX: ${opt:stage, self:provider.stage}
     events:
       - http:
           path: auth
           method: get
+
+plugins:
+  - serverless-domain-manager
 
 resources:
   # DynamoDB
@@ -30,3 +37,9 @@ custom:
   stage: ${opt:stage, self:provider.stage}
   # Set the table name here so we can use it while testing locally
   tablePrefix: ${self:custom.stage}
+
+  customDomain:
+    domainName: watercooler.express
+    basePath: '' # This will be prefixed to all routes
+    stage: ${self:provider.stage}
+    createRoute53Record: true

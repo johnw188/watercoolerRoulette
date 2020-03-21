@@ -1,45 +1,110 @@
-import time
-import json
-import urllib
+import urllib.request
+import urllib.parse
+import os
+import traceback
+
+import requests
+import boto3
+
+CLIENT_ID = os.environ["OAUTH_ID"]
+CLIENT_SECRET = os.environ["OAUTH_SECRET"]
+
+AUTH_CB = "https://slack.com/api/oauth.access"
+EXPECTED_REDIRECT = "https://watercooler.express/chat"
+
+AUTH_TEST = "https://api.slack.com/api/auth.test"
 
 
-BASE_URL = "https://slack.com/api/oauth.access"
+# TODO: make me a helper generally
+def get_dynamo_table(table_name: str):
+    dynamodb = boto3.resource('dynamodb')
+    prefix = os.environ["DYNAMODB_TABLE_PREFIX"]
+    return dynamodb.Table(prefix + "-" + table_name)
+
+
+def get_or_create_user(
+        *,
+        user_id: str,
+        team_id: str,
+        slack_username: str,
+        slack_team: str,
+        slack_url: str):
+    # Hard overwrite, YOLO
+    table = get_dynamo_table("users")
+    table.put_item(Item={
+        'user_id': user_id,
+        'team_id': team_id,
+        'slack_username': slack_username,
+        'slack_team': slack_team,
+        'slack_url': slack_url
+    })
 
 
 def endpoint(event, context):
-    # TODO: From John
-    # we need to make an /auth endpoint for slack to redirect to,
-    # which will basically be a lambda that makes a 
-    # GET https://slack.com/api/oauth.access?client_id=CLIENT_ID&client_secret=CLIENT_SECRET&code=XXYYZZ
-    # and then responds with a HTTP redirect to whatever we call /video
+    try:
+        return _endpoint(event, context)
+    except Exception as e:
+        return {
+            "statusCode": 200,
+            "body": str(e) + "\n" + traceback.format_exc()}
 
-    # which returns {
+
+def _endpoint(event, context):
+    # This is the redirect behavior when slack fails to auth
+    query_params = event["queryStringParameters"]
+    if "error" in query_params:
+        return {
+            "statusCode": 403,
+            "body": "Oauth Error Redirect by Slack to here"}
+
+    # Ask slack if user is legit
+    auth_params = {
+        "client_id": CLIENT_ID,
+        "client_secret": CLIENT_SECRET,
+        "code": query_params["code"],
+        "redirect_uri": "https://watercooler.express/auth"
+    }
+
+    try:
+        auth_result = requests.get(AUTH_CB, params=auth_params).json()
+    except urllib.error.URLError:
+        return {"statusCode": 403, "body": "OAuth seems invald"}
+
+    assert auth_result["ok"], auth_result
+    token = auth_result["access_token"]
+
+    headers = {
+        "Authorization": "Bearer " + token,
+        "Content-Type": "application/x-www-form-urlencoded",
+    }
+    # Slack said ok, find out their team identity
+    try:
+        res = requests.post(AUTH_TEST, headers=headers)
+    except urllib.error.URLError:
+        return {"statusCode": 403, "body": "OAuth seems invald"}
+
+    team_result = res.json()
+    assert team_result["ok"], (token, team_result)
+
+    # Expected `team_result` format
+    # {
     #     "ok": true,
-    #     "access_token": "xoxp-1111827399-16111519414-20367011469-5f89a31i07",
-    #     "scope": "identity.basic",
-    #     "team_id": "T0G9PQBBK"
+    #     "url": "https://subarachnoid.slack.com/",
+    #     "team": "Subarachnoid Workspace",
+    #     "user": "grace",
+    #     "team_id": "T12345678",
+    #     "user_id": "W12345678"
     # }
 
-    params = urllib.parse.urlencode({
-        'CLIENT_ID': "TODO1",
-        'client_secret': "TODO2",
-        'code': "TODO3"
-    })
-
-    full_url = "{BASE_URL}?{PARAMS}".format(BASE_URL=BASE_URL, params=params)
-    # TODO failed auth here.
-    urllib.urlopen(full_url)
-
-    body = {
-         "ok": True,
-         "access_token": "fooplaceholder",
-         "scope": "identity.basic",
-         "team_id": "FooTeamID"
+    get_or_create_user(
+        user_id=team_result["user_id"],
+        team_id=team_result["team_id"],
+        slack_username=team_result["user"],
+        slack_team=team_result["team"],
+        slack_url=team_result["url"]
+    )
+    # TODO: Issue JWT token here
+    return {
+        "statusCode": 302,
+        "headers": {"Location": "https://watercooler.express/chat"}
     }
-
-    response = {
-        "statusCode": 200,
-        "body": json.dumps(body)
-    }
-
-    return response

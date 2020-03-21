@@ -6,7 +6,7 @@ import os
 import boto3
 
 CLIENT_ID = os.environ["OAUTH_ID"]
-CLIENT_SECRET = ["OAUTH_SECRET"]
+CLIENT_SECRET = os.environ["OAUTH_SECRET"]
 
 AUTH_URL = "https://slack.com/api/oauth.access"
 EXPECTED_REDIRECT = "https://watercooler.express/chat"

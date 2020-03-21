@@ -5,7 +5,7 @@ frameworkVersion: ">=1.2.0 <2.0.0"
 provider:
   name: aws
   region: us-west-2
-  runtime: python3.7 # or python3.7, supported as of November 2018
+  runtime: python3.6 # or python3.7, supported as of November 2018
 
 functions:
   ping:
@@ -28,6 +28,7 @@ functions:
 
 plugins:
   - serverless-domain-manager
+  - serverless-python-requirements
 
 resources:
   # DynamoDB
@@ -37,6 +38,9 @@ custom:
   stage: ${opt:stage, self:provider.stage}
   # Set the table name here so we can use it while testing locally
   tablePrefix: ${self:custom.stage}
+
+  pythonRequirements:
+    dockerizePip: false
 
   customDomain:
     domainName: watercooler.express

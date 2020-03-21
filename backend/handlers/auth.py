@@ -1,17 +1,18 @@
-import json
 import urllib.request
 import urllib.parse
 import os
+import traceback
 
+import requests
 import boto3
 
 CLIENT_ID = os.environ["OAUTH_ID"]
 CLIENT_SECRET = os.environ["OAUTH_SECRET"]
 
-AUTH_URL = "https://slack.com/api/oauth.access"
+AUTH_CB = "https://slack.com/api/oauth.access"
 EXPECTED_REDIRECT = "https://watercooler.express/chat"
 
-AUTH_TEST = "https://api.slack.com/methods/auth.test"
+AUTH_TEST = "https://api.slack.com/api/auth.test"
 
 
 # TODO: make me a helper generally
@@ -21,18 +22,14 @@ def get_dynamo_table(table_name: str):
     return dynamodb.Table(prefix + "-" + table_name)
 
 
-def url_to_json(url: str, params: dict) -> dict:
-    if params:
-        url = "{url}?{params}".format(url=url, params=urllib.parse.urlencode(params))
-
-    response = urllib.request.urlopen(url)
-    assert response.status == 200, response.status
-
-    return json.loads(response.read())
-
-
-def get_or_create_user(*, user_id: str, team_id: str, slack_username: str, slack_team: str, slack_url: str):
-    # Hard overwrite the todo to the database, YOLO
+def get_or_create_user(
+        *,
+        user_id: str,
+        team_id: str,
+        slack_username: str,
+        slack_team: str,
+        slack_url: str):
+    # Hard overwrite, YOLO
     table = get_dynamo_table("users")
     table.put_item(Item={
         'user_id': user_id,
@@ -44,32 +41,50 @@ def get_or_create_user(*, user_id: str, team_id: str, slack_username: str, slack
 
 
 def endpoint(event, context):
+    try:
+        return _endpoint(event, context)
+    except Exception as e:
+        return {
+            "statusCode": 200,
+            "body": str(e) + "\n" + traceback.format_exc()}
+
+
+def _endpoint(event, context):
     # This is the redirect behavior when slack fails to auth
-    # if "error" in event["pathParameters"]:
-    #     return {"statusCode": 403, "body": "Oauth Error Redirect by Slack to here"}
+    query_params = event["queryStringParameters"]
+    if "error" in query_params:
+        return {
+            "statusCode": 403,
+            "body": "Oauth Error Redirect by Slack to here"}
 
     # Ask slack if user is legit
     auth_params = {
         "client_id": CLIENT_ID,
         "client_secret": CLIENT_SECRET,
-        "code": event["pathParameters"]["code"]
+        "code": query_params["code"],
+        "redirect_uri": "https://watercooler.express/auth"
     }
 
     try:
-        auth_result = url_to_json(AUTH_URL, auth_params)
+        auth_result = requests.get(AUTH_CB, params=auth_params).json()
     except urllib.error.URLError:
         return {"statusCode": 403, "body": "OAuth seems invald"}
 
     assert auth_result["ok"], auth_result
     token = auth_result["access_token"]
 
+    headers = {
+        "Authorization": "Bearer " + token,
+        "Content-Type": "application/x-www-form-urlencoded",
+    }
     # Slack said ok, find out their team identity
     try:
-        team_result = url_to_json(AUTH_TEST, {"token": token})
+        res = requests.post(AUTH_TEST, headers=headers)
     except urllib.error.URLError:
         return {"statusCode": 403, "body": "OAuth seems invald"}
 
-    assert team_result["ok"], team_result
+    team_result = res.json()
+    assert team_result["ok"], (token, team_result)
 
     # Expected `team_result` format
     # {

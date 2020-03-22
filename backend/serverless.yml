@@ -10,8 +10,12 @@ provider:
   stage: ${opt:stage}
 
   environment:
-    USERS_TABLE: ${opt:stage}-users
-    MATCHES_TABLE: ${opt:stage}-matches
+    TABLE_PREFIX: wce-${opt:stage}
+    USERS_TABLE: ${self:provider.environment.TABLE_PREFIX}-users
+    MATCHES_TABLE: ${self:provider.environment.TABLE_PREFIX}-matches
+    OAUTH_ID: ${env:OAUTH_ID}
+    OAUTH_SECRET: ${env:OAUTH_SECRET}
+    JWT_SECRET: TODOCONFIGME123456789
 
   iamRoleStatements:
     - Effect: Allow
@@ -22,26 +26,29 @@ provider:
         - dynamodb:PutItem
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
-      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${opt:stage}-*"
+        - dynamodb:DescribeTable
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.TABLE_PREFIX}-*"
 
 functions:
-  ping:
-    handler: lambdae/presence.endpoint
+  match:
+    handler: lambdae/match.endpoint
     events:
       - http:
-          path: ping
+          path: match
           method: get
 
   auth:
     handler: lambdae/auth.endpoint
-    environment:
-      OAUTH_ID: ${env:OAUTH_ID}
-      OAUTH_SECRET: ${env:OAUTH_SECRET}
-      JWT_SECRET: TODOCONFIGME123456789
-      USERS_TABLE: ${self:provider.environment.USERS_TABLE} 
     events:
       - http:
           path: auth
+          method: get
+
+  auth_win:
+    handler: lambdae/auth.win
+    events:
+      - http:
+          path: win
           method: get
 
 plugins:
@@ -49,7 +56,6 @@ plugins:
   - serverless-python-requirements
 
 resources:
-  # DynamoDB
   Resources:
     UsersTable:
       Type: AWS::DynamoDB::Table
@@ -65,7 +71,6 @@ resources:
             KeyType: HASH
           - AttributeName: user_id
             KeyType: RANGE
-        # Set the capacity to auto-scale
         BillingMode: PAY_PER_REQUEST
     
     MatchesTable:
@@ -82,7 +87,6 @@ resources:
             KeyType: HASH
           - AttributeName: user_id
             KeyType: RANGE
-        # Set the capacity to auto-scale
         BillingMode: PAY_PER_REQUEST
 
 custom:

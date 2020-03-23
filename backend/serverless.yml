@@ -54,6 +54,7 @@ functions:
 plugins:
   - serverless-domain-manager
   - serverless-python-requirements
+  - serverless-finch
 
 resources:
   Resources:
@@ -101,3 +102,7 @@ custom:
     basePath: '' # This will be prefixed to all routes
     stage: ${self:provider.stage}
     createRoute53Record: true
+  
+  client:
+    bucketName: watercooler-express-client
+    distributionFolder: ../frontend/public

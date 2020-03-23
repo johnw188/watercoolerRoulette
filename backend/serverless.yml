@@ -34,8 +34,8 @@ functions:
     handler: lambdae/match.endpoint
     events:
       - http:
-          path: match_new
-          method: get
+          path: match
+          method: post
 
   auth:
     handler: lambdae/auth.endpoint
@@ -62,12 +62,12 @@ resources:
       Properties:
         TableName: ${self:provider.environment.USERS_TABLE}
         AttributeDefinitions:
-          - AttributeName: team_id
+          - AttributeName: group_id
             AttributeType: S
           - AttributeName: user_id
             AttributeType: S
         KeySchema:
-          - AttributeName: team_id
+          - AttributeName: group_id
             KeyType: HASH
           - AttributeName: user_id
             KeyType: RANGE
@@ -78,12 +78,12 @@ resources:
       Properties:
         TableName: ${self:provider.environment.MATCHES_TABLE}
         AttributeDefinitions:
-          - AttributeName: team_id
+          - AttributeName: group_id
             AttributeType: S
           - AttributeName: user_id
             AttributeType: S
         KeySchema:
-          - AttributeName: team_id
+          - AttributeName: group_id
             KeyType: HASH
           - AttributeName: user_id
             KeyType: RANGE

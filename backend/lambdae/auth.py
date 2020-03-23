@@ -1,20 +1,19 @@
-import functools
 import urllib.request
 import urllib.parse
-import os
-import traceback
 
 import lambdae.shared as shared
 import lambdae.models as models
 
 import requests
-import boto3
 
 EXPECTED_REDIRECT = "https://watercooler.express/chat"
 
 AUTH_CB_API = "https://slack.com/api/oauth.access"
 AUTH_TEST_API = "https://api.slack.com/api/auth.test"
 USER_INFO_API = "https://slack.com/api/users.profile.get"
+
+OAUTH_CLIENT_ID = shared.get_env_var("OAUTH_ID")
+OAUTH_CLIENT_SECRET = shared.get_env_var("OAUTH_SECRET")
 
 
 @shared.debug_wrapper
@@ -28,8 +27,8 @@ def endpoint(event, context):
 
     # Ask slack if user is legit
     auth_params = {
-        "client_id": os.environ["OAUTH_ID"],
-        "client_secret": os.environ["OAUTH_SECRET"],
+        "client_id": OAUTH_CLIENT_ID,
+        "client_secret": OAUTH_CLIENT_SECRET,
         "code": query_params["code"],
         "redirect_uri": "https://watercooler.express/auth"
     }

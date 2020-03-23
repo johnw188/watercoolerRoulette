@@ -15,7 +15,7 @@ provider:
     MATCHES_TABLE: ${self:provider.environment.TABLE_PREFIX}-matches
     OAUTH_ID: ${env:OAUTH_ID}
     OAUTH_SECRET: ${env:OAUTH_SECRET}
-    JWT_SECRET: TODOCONFIGME123456789
+    JWT_SECRET: ${env:JWT_SECRET}
 
   iamRoleStatements:
     - Effect: Allow
@@ -34,7 +34,7 @@ functions:
     handler: lambdae/match.endpoint
     events:
       - http:
-          path: match
+          path: match_new
           method: get
 
   auth:

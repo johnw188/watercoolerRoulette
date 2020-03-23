@@ -23,13 +23,23 @@ def match_id_to_response(match: models.MatchesModel) -> dict:
     }
 
 
+def mfg_error(text: str, code: int = 500) -> dict:
+    return {
+        "statusCode": code,
+        "body": json.dumps({"ok": False, "message": text})
+    }
+
+
 @shared.debug_wrapper
 def endpoint(event, context):
     start_time = time.time()
 
-    event_dict = json.loads(event["body"])
-    user = models.UsersModel.from_token(event_dict["token"])
-    room_blob = event_dict["blob"]
+    try:
+        event_dict = json.loads(event["body"])
+        user = models.UsersModel.from_token(event_dict["token"])
+        room_blob = event_dict["blob"]
+    except Exception as e:
+        return mfg_error('Expecting JSON with {"token":"...", "blob": "..."}')
 
     # Get the unmatched people in my group
     potential_matches = list(models.MatchesModel.query(user.group_id, filter_condition=HAS_NO_MATCH))

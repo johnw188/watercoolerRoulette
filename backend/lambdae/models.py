@@ -1,17 +1,10 @@
-
 import datetime
-import json
 import time
-import os
 
-import jwt
+import lambdae.shared as shared
 
-from pynamodb.attributes import (UnicodeAttribute, BooleanAttribute, UTCDateTimeAttribute, JSONAttribute)
-from pynamodb.models import Model, DoesNotExist
-
-
-JWT_ALGO = "HS256"
-JWT_SECRET = os.environ["JWT_SECRET"]
+from pynamodb.attributes import (UnicodeAttribute, UTCDateTimeAttribute, JSONAttribute)
+from pynamodb.models import Model
 
 
 class AbstractTimestampedModel(Model):
@@ -29,7 +22,7 @@ class AbstractTimestampedModel(Model):
 
 class UsersModel(Model):
     class Meta:
-        table_name = os.environ["USERS_TABLE"]
+        table_name = shared.get_env_var("USERS_TABLE")
         region = "us-west-2"
 
     team_id = UnicodeAttribute(hash_key=True, null=False)
@@ -48,21 +41,20 @@ class UsersModel(Model):
             "token_issue_time": time.time()
         }
 
-        encoded = jwt.encode(
-            to_encode, JWT_SECRET, algorithm=JWT_ALGO)
+        encoded = shared.jwt_encode(to_encode)
         exp_dt = datetime.datetime.utcnow() + datetime.timedelta(days=1)
         extras = exp_dt.strftime("Domain=watercooler.express; expires=%a, %d %b %Y %H:%M:%S GMT")
         return {"Set-Cookie": "token={0}; {1}".format(encoded, extras)}
 
     @staticmethod
     def from_token(token: str):
-        token_data = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGO])
+        token_data = shared.jtw_decode(token)
         return UsersModel.get(token_data["team_id"], token_data["user_id"])
 
 
 class MatchesModel(Model):
     class Meta:
-        table_name = os.environ["MATCHES_TABLE"]
+        table_name = shared.get_env_var("MATCHES_TABLE")
         region = "us-west-2"
 
     team_id = UnicodeAttribute(hash_key=True, null=False)

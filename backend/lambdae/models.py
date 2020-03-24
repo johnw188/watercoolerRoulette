@@ -50,7 +50,7 @@ class UsersModel(Model):
 
         encoded = shared.jwt_encode(to_encode)
         exp_dt = datetime.datetime.utcnow() + datetime.timedelta(days=1)
-        extras = exp_dt.strftime("Domain=watercooler.express; expires=%a, %d %b %Y %H:%M:%S GMT")
+        extras = exp_dt.strftime("Domain=api.watercooler.express; expires=%a, %d %b %Y %H:%M:%S GMT")
         return {"Set-Cookie": "token={0}; {1}".format(encoded, extras)}
 
     @staticmethod

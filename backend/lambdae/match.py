@@ -9,11 +9,10 @@ import pynamodb.exceptions
 
 INTERVAL_MS = 50
 MAX_TIME_S = 5.0
-TIMEOUT_REC_MS = 100
 
 
 def get_timeout_rec_ms():
-    return TIMEOUT_REC_MS + int(random.uniform(0, 500))
+    return 50 + int(random.uniform(0, 100))
 
 
 def match_id_to_response(partner: str, blob: dict) -> dict:
@@ -40,12 +39,11 @@ def endpoint(event, context):
         try:
             # Try to claim the match, but only if unclaimed
             p_match.update(actions=actions, condition=HAS_NO_MATCH)
-            print("Claimed a lover")
-            
-            return match_id_to_response(p_match.user_id, p_match.room_blob)
         except pynamodb.exceptions.UpdateError:
             # User is already matched/deleted from the table
             continue
+        print("Claimed a lover")
+        return match_id_to_response(p_match.user_id, p_match.room_blob)
 
     # No luck matching to someone else, so put my record in the table, and wait on it
     waiting_match = models.MatchesModel(user.group_id, user.user_id)
@@ -73,10 +71,11 @@ def endpoint(event, context):
         waiting_match.delete()
 
     print("Exiting -> Timeout")
+    timeout_ms = get_timeout_rec_ms()
     return shared.json_error_response(
-        message="Timed out waiting for match, try again in %ims!" % TIMEOUT_REC_MS,
+        message="Timed out waiting for match, try again in %ims!" % timeout_ms,
         code=408,
-        j={"timeout_ms": get_timeout_rec_ms()}
+        j={"timeout_ms": timeout_ms}
     )
 
 

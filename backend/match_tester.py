@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import concurrent.futures
 import time
 import uuid
@@ -10,7 +12,7 @@ import lambdae.shared as shared
 
 
 headers = {
-    "Host": "watercooler.express",
+    "Host": "api.watercooler.express",
     "Content-Type": "application/json",
     "User-Agent": "curl/7.58.0"
 }
@@ -23,7 +25,7 @@ def request_match(group_id: str, user_id: str):
     start_time = time.time()
     for x in range(20):
         response = requests.post(
-            "http://watercooler.express/match",
+            "http://api.watercooler.express/match",
             json={"token": token, "blob": {"unique": str(uuid.uuid4())}},
             headers=headers)
 
@@ -60,8 +62,8 @@ for my_id, v in results.items():
     partners_blob = results[my_partner]["blob"]
     partners_partner = results[my_partner]["partner"]
 
-    assert my_blob == partners_blob
-    assert my_id == partners_partner
+    assert my_blob == partners_blob, str((my_blob, partners_blob))
+    assert my_id == partners_partner, str((my_id, partners_partner))
 
     print("ID: {} <---matches---> ID: {}. Blobs identical.".format(my_id, my_partner))
 

@@ -1,10 +1,13 @@
 import datetime
+import os
 import time
 
 import lambdae.shared as shared
 
 from pynamodb.attributes import (UnicodeAttribute, UTCDateTimeAttribute, JSONAttribute)
 from pynamodb.models import Model
+
+USE_LOCAL_DYNAMO = "DYNAMO_HOST" in os.environ
 
 
 class AbstractTimestampedModel(Model):
@@ -23,7 +26,11 @@ class AbstractTimestampedModel(Model):
 class UsersModel(Model):
     class Meta:
         table_name = shared.get_env_var("USERS_TABLE")
-        region = "us-west-2"
+
+        if USE_LOCAL_DYNAMO:
+            host = os.environ["DYNAMO_HOST"]
+        else:
+            region = "us-west-2"
 
     group_id = UnicodeAttribute(hash_key=True, null=False)
     user_id = UnicodeAttribute(range_key=True, null=False)
@@ -55,7 +62,11 @@ class UsersModel(Model):
 class MatchesModel(Model):
     class Meta:
         table_name = shared.get_env_var("MATCHES_TABLE")
-        region = "us-west-2"
+
+        if USE_LOCAL_DYNAMO:
+            host = os.environ["DYNAMO_HOST"]
+        else:
+            region = "us-west-2"
 
     group_id = UnicodeAttribute(hash_key=True, null=False)
     user_id = UnicodeAttribute(range_key=True, null=False)

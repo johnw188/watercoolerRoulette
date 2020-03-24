@@ -5,7 +5,11 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+<<<<<<< Updated upstream
     "serverless-finch": "^2.5.2",
+=======
+    "serverless-dynamodb-local": "^0.2.39",
+>>>>>>> Stashed changes
     "serverless-python-requirements": "^5.1.0"
   },
   "devDependencies": {

@@ -7,10 +7,10 @@ provider:
   region: us-west-2
   runtime: python3.6
 
-  stage: ${opt:stage}
+  stage: ${opt:stage, 'dev'}
 
   environment:
-    TABLE_PREFIX: wce-${opt:stage}
+    TABLE_PREFIX: wce-${opt:stage, 'dev'}
     USERS_TABLE: ${self:provider.environment.TABLE_PREFIX}-users
     MATCHES_TABLE: ${self:provider.environment.TABLE_PREFIX}-matches
     OAUTH_ID: ${env:OAUTH_ID}
@@ -45,16 +45,17 @@ functions:
           method: get
 
   auth_win:
-    handler: lambdae/auth.win
+    handler: lambdae/auth.make_test_users
     events:
       - http:
-          path: win
+          path: fakes
           method: get
 
 plugins:
   - serverless-domain-manager
-  - serverless-python-requirements
+  - serverless-dynamodb-local
   - serverless-finch
+  - serverless-python-requirements
 
 resources:
   Resources:
@@ -91,18 +92,30 @@ resources:
         BillingMode: PAY_PER_REQUEST
 
 custom:
-  stage: ${opt:stage, self:provider.stage}
-  # Set the table name here so we can use it while testing locally
+  stage: ${self:provider.stage}
 
   pythonRequirements:
     dockerizePip: false
 
   customDomain:
-    domainName: watercooler.express
-    basePath: '' # This will be prefixed to all routes
+    domainName: 'api.watercooler.express'
+    basePath: ''
     stage: ${self:provider.stage}
     createRoute53Record: true
   
   client:
     bucketName: watercooler-express-client
     distributionFolder: ../frontend/public
+
+  dynamodb:
+  # If you only want to use DynamoDB Local in some stages, declare them here
+    stages:
+      - local
+    start:
+      port: 8000
+      inMemory: true
+      heapInitial: 200m
+      heapMax: 1g
+      migrate: true
+      seed: true
+      convertEmptyValues: true

@@ -6,8 +6,6 @@ import lambdae.models as models
 
 import requests
 
-EXPECTED_REDIRECT = "https://watercooler.express/chat"
-
 AUTH_CB_API = "https://slack.com/api/oauth.access"
 AUTH_TEST_API = "https://api.slack.com/api/auth.test"
 USER_INFO_API = "https://slack.com/api/users.profile.get"
@@ -15,7 +13,7 @@ USER_INFO_API = "https://slack.com/api/users.profile.get"
 OAUTH_ID = shared.get_env_var("OAUTH_ID")
 OAUTH_SECRET = shared.get_env_var("OAUTH_SECRET")
 
-AFTER_AUTH_REDIRECT = "https://watercooler.express/win"
+AFTER_AUTH_REDIRECT = "https://watercooler.express"
 
 @shared.debug_wrapper
 def endpoint(event, context):
@@ -24,12 +22,14 @@ def endpoint(event, context):
     if "error" in query_params:
         return shared.json_error_response("Oauth Error Redirect by Slack to here", 403)
 
+    print(query_params)
+
     # Ask slack if user is legit
     auth_params = {
         "client_id": OAUTH_ID,
         "client_secret": OAUTH_SECRET,
         "code": query_params["code"],
-        "redirect_uri": "https://watercooler.express/auth"
+        "redirect_uri": "https://api.watercooler.express/auth"
     }
     auth_result = requests.post(AUTH_CB_API, data=auth_params).json()
     assert auth_result["ok"], auth_result
@@ -67,7 +67,14 @@ def endpoint(event, context):
     )
     user.save()
 
-    # TODO: REMOVE ME
+    # Shoot the user a cookie with their JWT token, and redirect    
+    response_headers = {"Location": AFTER_AUTH_REDIRECT}
+    response_headers.update(user.get_jwt_token_header())
+    return {"statusCode": 302, "headers": response_headers}
+
+
+@shared.debug_wrapper
+def make_test_users(event, context):
     for x in range(100):
         fake_user = models.UsersModel(
             user_id="fake" + str(x),
@@ -79,12 +86,4 @@ def endpoint(event, context):
         )
         fake_user.save()
 
-    # Shoot the user a cookie with their JWT token, and redirect    
-    response_headers = {"Location": AFTER_AUTH_REDIRECT}
-    response_headers.update(user.get_jwt_token_header())
-    return {"statusCode": 302, "headers": response_headers}
-
-
-@shared.debug_wrapper
-def win(event, context):
-    return {"statusCode": 200, "body": "You win at oauth."}
+    return {"statusCode": 200, "body": "Fake users created"}

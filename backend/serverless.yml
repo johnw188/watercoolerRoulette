@@ -37,6 +37,13 @@ functions:
           path: match
           method: post
 
+  match_cleanup:
+    handler: lambdae/match.cleanup
+    events:
+      - schedule:
+          rate: rate(30 minutes)
+          enabled: true
+
   auth:
     handler: lambdae/auth.endpoint
     events:

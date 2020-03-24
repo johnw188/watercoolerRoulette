@@ -1,3 +1,4 @@
+import datetime
 import json
 import time
 import random
@@ -19,6 +20,7 @@ def match_id_to_response(partner: str, blob: dict) -> dict:
     return shared.json_success_response({"partner": partner, "blob": blob})
 
 
+
 @shared.debug_wrapper
 def endpoint(event, context):
     start_time = time.time()
@@ -33,30 +35,30 @@ def endpoint(event, context):
     potential_matches = list(models.MatchesModel.query(user.group_id, filter_condition=HAS_NO_MATCH))
     random.shuffle(potential_matches)
 
-    print("Searching through potential matches")
+    print(user.user_id, "Searching through potential matches")
     actions = [models.MatchesModel.match_id.set(user.user_id), models.MatchesModel.room_blob.set(room_blob)]
     for p_match in potential_matches:
         try:
-            # Try to claim the match, but only if unclaimed
+            print(user.user_id, "proposing match with ", p_match.user_id)
             p_match.update(actions=actions, condition=HAS_NO_MATCH)
         except pynamodb.exceptions.UpdateError:
-            # User is already matched/deleted from the table
+            print(user.user_id, "user already matched :(")
             continue
-        print("Claimed a lover")
+        print(user.user_id, "successful match with ", p_match.user_id)
         return match_id_to_response(p_match.user_id, p_match.room_blob)
 
     # No luck matching to someone else, so put my record in the table, and wait on it
     waiting_match = models.MatchesModel(user.group_id, user.user_id)
     waiting_match.match_id = None
     waiting_match.room_blob = None
-
+    print(user.user_id, "Adding self to the waiting table")
     waiting_match.save()
+
     try:
-        print("No match applied. Waiting on someone else")
         while time.time() - start_time < MAX_TIME_S:
             waiting_match.refresh(consistent_read=True)
             if waiting_match.match_id is not None:
-                print("Was claimed!")
+                print(user.user_id, "was proposed to by", waiting_match.match_id)
                 return match_id_to_response(waiting_match.match_id, waiting_match.room_blob)
             time.sleep(INTERVAL_MS / 1000)
 
@@ -65,10 +67,17 @@ def endpoint(event, context):
             waiting_match.delete(condition=models.MatchesModel.match_id.does_not_exist())
         except pynamodb.exceptions.DeleteError:
             # NB(meawoppl) this case is likely untested
-            print("Found love at last call")
+            print(user.user_id, "matched at last call with", waiting_match.match_id)
             return match_id_to_response(waiting_match.match_id, waiting_match.room_blob)
     finally:
-        waiting_match.delete()
+        try:
+            waiting_match.delete()
+        except pynamodb.exceptions.DeleteError:
+            # NOTE(meawoppl) there is a bunch of reasons this could fail. This probably
+            # should include seprate treatment of retryable issues things that could be caused by
+            # concurrent calls into this function by the same user
+            print(user.user_id, "failed to cleanup match record following match attempt")
+            raise
 
     print("Exiting -> Timeout")
     timeout_ms = get_timeout_rec_ms()
@@ -81,10 +90,13 @@ def endpoint(event, context):
 
 def cleanup(event, context):
     """Cull match entries that are old"""
-    import datetime
-    old_condition = models.MatchesModel.created_dt > datetime.datetime.utcnow() - datetime.timedelta(minutes=15)
+    old_condition = models.MatchesModel.created_dt < (datetime.datetime.utcnow() - datetime.timedelta(minutes=15))
 
     with models.MatchesModel.batch_write() as batch:
-        times = list(map(batch.delete, models.MatchesModel.scan(filter_condition=old_condition)))
-
-    print(times)
+        for n, record in enumerate(models.MatchesModel.scan(filter_condition=old_condition)):
+            print(
+                "Removing record from user: ", record.user_id,
+                "aged:", datetime.datetime.utcnow() - record.created_dt)
+            batch.delete(record)
+            print("Removed.")
+    print("Removed", n+1, "old records.")

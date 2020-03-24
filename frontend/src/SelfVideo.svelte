@@ -25,16 +25,15 @@ import { onMount } from 'svelte';
 let video;
 
 onMount(() => {
-console.log("Video: "  + video)
-if (navigator.mediaDevices.getUserMedia) {
-  navigator.mediaDevices.getUserMedia({ video: true })
-    .then(function (stream) {
-      video.srcObject = stream;
-    })
-    .catch(function (err) {
-      console.log("Something went wrong!" + err);
-    });
-}
-}
-)
+  console.log("Video: "  + video)
+  if (navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(function (stream) {
+        video.srcObject = stream;
+      })
+      .catch(function (err) {
+        console.log("Something went wrong!" + err);
+      });
+  }
+})
 </script>

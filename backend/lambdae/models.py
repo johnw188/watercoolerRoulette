@@ -15,7 +15,7 @@ class AbstractTimestampedModel(Model):
     updated_dt = UTCDateTimeAttribute(null=False)
 
     def save(self, *args, **kwargs):
-        self.updatedAt = datetime.datetime.now()
+        self.updated_dt = datetime.datetime.now()
         super(AbstractTimestampedModel, self).save(*args, **kwargs)
 
     def __iter__(self):
@@ -23,7 +23,7 @@ class AbstractTimestampedModel(Model):
             yield name, attr.serialize(getattr(self, name))
 
 
-class UsersModel(Model):
+class UsersModel(AbstractTimestampedModel):
     class Meta:
         table_name = shared.get_env_var("USERS_TABLE")
 
@@ -40,8 +40,7 @@ class UsersModel(Model):
     slack_url = UnicodeAttribute(null=False)
     slack_avatar = UnicodeAttribute(null=False)
 
-    def get_jwt_token_header(self) -> str:
-        # JWT whatnot in here...
+    def to_token(self) -> str:
         to_encode = {
             "group_id": self.group_id,
             "user_id": self.user_id,
@@ -59,7 +58,7 @@ class UsersModel(Model):
         return UsersModel.get(token_data["group_id"], token_data["user_id"])
 
 
-class MatchesModel(Model):
+class MatchesModel(AbstractTimestampedModel):
     class Meta:
         table_name = shared.get_env_var("MATCHES_TABLE")
 

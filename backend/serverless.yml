@@ -31,7 +31,7 @@ provider:
 
 functions:
   match:
-    handler: lambdae/match.endpoint
+    handler: lambdae/match.match
     events:
       - http:
           path: match
@@ -45,18 +45,15 @@ functions:
           enabled: true
 
   auth:
-    handler: lambdae/auth.endpoint
+    handler: lambdae/auth.slack_oauth
     events:
       - http:
           path: auth
           method: get
 
-  auth_win:
-    handler: lambdae/auth.make_test_users
-    events:
-      - http:
-          path: fakes
-          method: get
+  # sls invoke --stage dev --function make_test_users
+  auth_test_users:
+    handler: lambdae/auth.auth_test_users
 
 plugins:
   - serverless-domain-manager

@@ -1,6 +1,3 @@
-import urllib.request
-import urllib.parse
-
 import lambdae.shared as shared
 import lambdae.models as models
 
@@ -16,7 +13,7 @@ OAUTH_SECRET = shared.get_env_var("OAUTH_SECRET")
 AFTER_AUTH_REDIRECT = "https://watercooler.express"
 
 @shared.debug_wrapper
-def endpoint(event, context):
+def slack_oauth(event, context):
     # This is the redirect behavior when slack fails to auth
     query_params = event["queryStringParameters"]
     if "error" in query_params:
@@ -67,14 +64,14 @@ def endpoint(event, context):
     )
     user.save()
 
-    # Shoot the user a cookie with their JWT token, and redirect    
+    # Shoot the user a cookie with their JWT token, and redirect
     response_headers = {"Location": AFTER_AUTH_REDIRECT}
     response_headers.update(user.get_jwt_token_header())
     return {"statusCode": 302, "headers": response_headers}
 
 
 @shared.debug_wrapper
-def make_test_users(event, context):
+def auth_test_users(event, context):
     for x in range(100):
         fake_user = models.UsersModel(
             user_id="fake" + str(x),

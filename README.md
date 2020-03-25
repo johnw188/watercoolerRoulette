@@ -82,7 +82,7 @@ surge public my-project.surge.sh
 
 Running the backend tests requires `pytest` and `pytest-env` modules
 
-```
+```bash
 cd backend
 python3 -m pytest
 ```

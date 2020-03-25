@@ -1,3 +1,5 @@
+import datetime
+
 import lambdae.shared as shared
 import lambdae.models as models
 
@@ -64,8 +66,17 @@ def slack_oauth(event, context):
     )
     user.save()
 
+    # Figure out how to format/set the cookie
+    encoded = user.get_token()
+    exp_dt = datetime.datetime.utcnow() + datetime.timedelta(days=1)
+    cookie_parts = ("token=" + encoded, "Domain=api.watercooler.express", exp_dt.strftime("expires=%a, %d %b %Y %H:%M:%S GMT"))
+    cookie = "; ".join(cookie_parts)
+
     # Shoot the user a cookie with their JWT token, and redirect
-    response_headers = {"Location": AFTER_AUTH_REDIRECT}
+    response_headers = {
+        "Location": AFTER_AUTH_REDIRECT,
+        "Set-Cookie": cookie
+    }
     response_headers.update(user.get_jwt_token_header())
     return {"statusCode": 302, "headers": response_headers}
 

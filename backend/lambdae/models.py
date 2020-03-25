@@ -7,7 +7,8 @@ import lambdae.shared as shared
 from pynamodb.attributes import (UnicodeAttribute, UTCDateTimeAttribute, JSONAttribute)
 from pynamodb.models import Model
 
-USE_LOCAL_DYNAMO = "DYNAMO_HOST" in os.environ
+# Set by serverless when running locally/testing
+IS_LOCAL = "IS_LOCAL" in os.environ
 
 
 class AbstractTimestampedModel(Model):
@@ -27,8 +28,8 @@ class UsersModel(AbstractTimestampedModel):
     class Meta:
         table_name = shared.get_env_var("USERS_TABLE")
 
-        if USE_LOCAL_DYNAMO:
-            host = os.environ["DYNAMO_HOST"]
+        if IS_LOCAL:
+            host = "http://localhost:8000"
         else:
             region = "us-west-2"
 
@@ -40,17 +41,8 @@ class UsersModel(AbstractTimestampedModel):
     slack_url = UnicodeAttribute(null=False)
     slack_avatar = UnicodeAttribute(null=False)
 
-    def to_token(self) -> str:
-        to_encode = {
-            "group_id": self.group_id,
-            "user_id": self.user_id,
-            "time": time.time()
-        }
-
-        encoded = shared.jwt_encode(to_encode)
-        exp_dt = datetime.datetime.utcnow() + datetime.timedelta(days=1)
-        extras = exp_dt.strftime("Domain=api.watercooler.express; expires=%a, %d %b %Y %H:%M:%S GMT")
-        return {"Set-Cookie": "token={0}; {1}".format(encoded, extras)}
+    def get_token(self) -> str:
+        return shared.jwt_issue(group_id=self.group_id, user_id=self.user_id)
 
     @staticmethod
     def from_token(token: str):
@@ -62,8 +54,8 @@ class MatchesModel(AbstractTimestampedModel):
     class Meta:
         table_name = shared.get_env_var("MATCHES_TABLE")
 
-        if USE_LOCAL_DYNAMO:
-            host = os.environ["DYNAMO_HOST"]
+        if IS_LOCAL:
+            host = "http://localhost:8000"
         else:
             region = "us-west-2"
 

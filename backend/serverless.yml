@@ -53,6 +53,21 @@ functions:
           path: auth
           method: get
 
+  get_answer:
+    handler: lambdae/match.get_answer
+    events:
+      - http:
+          path: answer
+          method: get
+
+  post_answer:
+    handler: lambdae/match.post_answer
+    events:
+      - http:
+          path: answer
+          method: post
+
+
   # sls invoke --stage dev --function make_test_users
   auth_test_users:
     handler: lambdae/auth.auth_test_users

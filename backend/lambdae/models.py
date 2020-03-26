@@ -63,4 +63,5 @@ class MatchesModel(AbstractTimestampedModel):
     user_id = UnicodeAttribute(range_key=True, null=False)
 
     match_id = UnicodeAttribute(null=True)
-    room_blob = JSONAttribute(null=True)
+    offer = JSONAttribute(null=True)
+    response = JSONAttribute(null=True)

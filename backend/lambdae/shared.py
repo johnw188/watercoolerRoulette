@@ -5,7 +5,7 @@ import time
 import traceback
 
 import jwt
-
+    
 # 1 day?
 MAX_TOKEN_AGE_SECONDS = 24 * 60 * 60
 
@@ -60,12 +60,18 @@ def _fmt_exception(e: Exception) -> str:
 def debug_wrapper(f):
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
+        event, context = args
+        print("Request to " + str(f) + ":\n" + json.dumps(event, indent=2))
+
         try:
             return f(*args, **kwargs)
         except Exception as e:
             return {
                 "statusCode": 500,
-                "body": _fmt_exception(e)}
+                "body": json.dumps({
+                    "ok": False,
+                    "message": _fmt_exception(e)
+                })}
     return wrapper
 
 

@@ -15,8 +15,8 @@ logger = logging.getLogger("lambdae.match_test")
 logger.setLevel(logging.INFO)
 
 
-def make_json_event(*, body_json: dict) -> dict:
-    return {"body": json.dumps(body_json)}
+def make_json_event(*, body_json: dict, headers: dict) -> dict:
+    return {"body": json.dumps(body_json), "headers": headers}
 
 
 def add_fake_user(group_id: str, user_id: str):
@@ -35,26 +35,25 @@ def add_fake_user(group_id: str, user_id: str):
 
 def test_match_timeout():
     user = add_fake_user("fakegroup-1", "fakeuser")
-    token = user.get_token()
     result = lambdae.match.match(make_json_event(
-        body_json={"token": token, "blob": {"bar": "baz"}}
+        body_json={"offer": {"bar": "baz"}},
+        headers={"Cookie": "token=" + user.get_token()}
     ), {})
-    print(result["body"].replace("\\n)", "\n"))
+    print(json.loads(result["body"])["message"])
     assert result["statusCode"] == 408
     assert json.loads(result["body"])["timeout_ms"] > 0
 
 
 def request_match(group_id, user_id):
     # Forge myself a JWT token
-    my_user = add_fake_user(group_id, user_id)
-
-    token = my_user.get_token()
+    user = add_fake_user(group_id, user_id)
 
     start_time = time.time()
     for x in range(20):
         response = lambdae.match.match(make_json_event(
-            body_json={"token": token, "blob": {"bar": "baz"}}),
-            {})
+            body_json={"offer": {"bar": "baz"}},
+            headers={"Cookie": "token=" + user.get_token()}
+        ), {})
 
         results = json.loads(response["body"])
 
@@ -65,7 +64,7 @@ def request_match(group_id, user_id):
             return (user_id, dict(
                 time=time.time() - start_time,
                 partner=results["partner"],
-                blob=results["blob"],
+                offer=results["offer"],
                 cycles=x+1))
         else:
             logger.warning(results["message"])
@@ -100,23 +99,22 @@ def _do_concurrent_matchs(concurrency):
         print(my_id, v)
 
     for my_id, v in results.items():
-        my_blob = v["blob"]
+        my_offer = v["offer"]
         my_partner = v["partner"]
 
-        partners_blob = results[my_partner]["blob"]
+        partners_offer = results[my_partner]["offer"]
         partners_partner = results[my_partner]["partner"]
 
-        assert my_blob == partners_blob, str((my_blob, partners_blob))
+        assert my_offer == partners_offer, str((my_offer, partners_offer))
         assert my_id == partners_partner, str((my_id, partners_partner))
 
-        print("ID: {} <---matches---> ID: {}. Blobs identical.".format(my_id, my_partner))
+        print("ID: {} <--matches--> ID: {}. offers identical.".format(my_id, my_partner))
 
     # Print some precentiles on delivery times
     times = list(r["time"] for r in results.values())
     times.sort()
 
     print("Average of %f cycles" % np.mean(list(r["cycles"] for r in results.values())))
-
 
     print("Timing info")
     print(times)

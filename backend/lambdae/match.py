@@ -21,17 +21,17 @@ def get_timeout_rec_ms():
     return int(random.uniform(0, 200))
 
 
-def match_id_to_response(partner: str, blob: dict, offerer: bool) -> dict:
-    return shared.json_success_response({"partner": partner, "offer": blob, "offerer": offerer})
+def match_id_to_response(partner: str, offer: dict, offerer: bool) -> dict:
+    return shared.json_success_response({"partner": partner, "offer": offer, "offerer": offerer})
 
 
 @shared.debug_wrapper
 def match(event, context):
-    user = auth.requires_authorization(event)
+    user = auth.require_authorization(event)
     start_time = time.time()
 
     event_dict = json.loads(event["body"])
-    room_blob = event_dict["offer"]
+    offer = event_dict["offer"]
 
     HAS_NO_MATCH = models.MatchesModel.match_id.does_not_exist()
 
@@ -40,7 +40,7 @@ def match(event, context):
     random.shuffle(potential_matches)
 
     logger.info(user.user_id + " Searching through potential matches")
-    actions = [models.MatchesModel.match_id.set(user.user_id), models.MatchesModel.room_blob.set(room_blob)]
+    actions = [models.MatchesModel.match_id.set(user.user_id), models.MatchesModel.offer.set(offer)]
     for p_match in potential_matches:
         try:
             logger.info(user.user_id + " proposing match with " + p_match.user_id)
@@ -49,12 +49,12 @@ def match(event, context):
             logger.info(user.user_id + " user already matched :(")
             continue
         logger.info(user.user_id + " successful match with " + p_match.user_id)
-        return match_id_to_response(p_match.user_id, p_match.room_blob, True)
+        return match_id_to_response(p_match.user_id, p_match.offer, True)
 
     # No luck matching to someone else, so put my record in the table, and wait on it
     waiting_match = models.MatchesModel(user.group_id, user.user_id)
     waiting_match.match_id = None
-    waiting_match.room_blob = None
+    waiting_match.offer = None
     logger.info(user.user_id + " adding self to the waiting table")
     waiting_match.save()
 
@@ -62,7 +62,7 @@ def match(event, context):
         waiting_match.refresh(consistent_read=True)
         if waiting_match.match_id is not None:
             logger.info(user.user_id + " was proposed to by " + waiting_match.match_id)
-            return match_id_to_response(waiting_match.match_id, waiting_match.room_blob, False)
+            return match_id_to_response(waiting_match.match_id, waiting_match.offer, False)
         time.sleep(INTERVAL_MS / 1000)
 
     # Try to delete the match record, but only if unmatched
@@ -71,7 +71,7 @@ def match(event, context):
     except pynamodb.exceptions.DeleteError:
         # NB(meawoppl) this case is likely untested
         logger.info(user.user_id + " matched at last call with " + waiting_match.match_id)
-        return match_id_to_response(waiting_match.match_id, waiting_match.room_blob, False)
+        return match_id_to_response(waiting_match.match_id, waiting_match.offer, False)
 
     logger.info("Exiting -> Timeout")
     timeout_ms = get_timeout_rec_ms()
@@ -88,7 +88,7 @@ def _get_match(group_id, user_id):
 
 
 def post_answer(event, context):
-    user = auth.requires_authorization(event)
+    user = auth.require_authorization(event)
     match = _get_match(user.group_id, user.user_id)
     event_dict = json.loads(event)
 
@@ -97,7 +97,7 @@ def post_answer(event, context):
 
 
 def get_answer(event, context):
-    user = auth.requires_authorization(event)
+    user = auth.require_authorization(event)
     match = _get_match(user.group_id, user.user_id)
     return shared.json_success_response({"answer": match.answer})
 

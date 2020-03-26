@@ -61,7 +61,7 @@ def debug_wrapper(f):
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
         event, context = args
-        print("Request to " + str(f) + ":\n" + json.dumps(event, indent=2))
+        print("Request to " + str(f.__name__) + ":\n" + json.dumps(event, indent=2))
 
         try:
             return f(*args, **kwargs)

@@ -69,27 +69,27 @@ def request_match(group_id, user_id):
         else:
             logger.warning(results["message"])
             secs = results["timeout_ms"] / 1000
-            print("Wating for %fs" % secs)
+            logger.warning("Cycle %i, no match, wating for %fs" % (n, secs))
             time.sleep(secs)
 
-    return None
+    assert False, "Timed out"
 
 
 def test_simple():
-    _do_concurrent_matchs(2)
+    _do_concurrent_matchs(2, 100)
 
 
 def test_stress():
-    _do_concurrent_matchs(20)
+    _do_concurrent_matchs(10, 200)
 
 
 def ent():
     return uuid.uuid4().hex[::4]
 
 
-def _do_concurrent_matchs(concurrency):
+def _do_concurrent_matchs(concurrency: int, n_users: int):
     fake_team = "faketeam" + ent()
-    fake_teammates = ["fake%i-%s" % (i, ent()) for i in range(100)]
+    fake_teammates = ["fake%i-%s" % (i, ent()) for i in range(n_users)]
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as tpe:
         results = dict([r for r in tpe.map(lambda teammate: request_match(fake_team, teammate), fake_teammates)])

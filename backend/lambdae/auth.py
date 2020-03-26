@@ -32,14 +32,14 @@ def require_authorization(event):
      - validate it
      - look up the user
      - return the user instance
-    
+
     If any of that fails, throw an auth exception
     """
 
     try:
         auth_cookie = cookies.SimpleCookie()
         auth_cookie.load(event["headers"]["Cookie"])
-        return models.UsersModel.from_token(auth_cookie[COOKIE_ATTR_NAME])
+        return models.UsersModel.from_token(auth_cookie[COOKIE_ATTR_NAME].value)
     except Exception as e:
         raise AuthException("Failure during auth") from e
 

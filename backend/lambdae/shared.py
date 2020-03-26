@@ -5,7 +5,7 @@ import time
 import traceback
 
 import jwt
-    
+
 # 1 day?
 MAX_TOKEN_AGE_SECONDS = 24 * 60 * 60
 
@@ -49,7 +49,7 @@ def jwt_encode(to_encode: dict) -> str:
 
 
 def jwt_decode(token: str) -> dict:
-    return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGO])
+    return jwt.decode(token.encode(), JWT_SECRET, algorithms=[JWT_ALGO])
 
 
 def _fmt_exception(e: Exception) -> str:

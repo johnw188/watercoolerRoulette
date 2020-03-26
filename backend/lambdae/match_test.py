@@ -120,3 +120,32 @@ def _do_concurrent_matchs(concurrency):
     print(times)
     for percentile in [0, 25, 50, 75, 100]:
         print("%ith percentile finished in %ims" % (percentile, np.percentile(times, percentile)*1000))
+
+
+def test_answers():
+    group = "fakegroup-ans"
+    user1 = add_fake_user(group, "fake-usr-1")
+    user2 = add_fake_user(group, "fake-usr-2")
+
+    match = models.MatchesModel(group, user1.user_id)
+    match.match_id = "fake-usr-2"
+    match.save()
+
+    answer = {"bar": "baz"}
+    result1 = lambdae.match.post_answer(
+        {
+            "headers": {"Cookie": "token=" + user2.get_token()},
+            "body": json.dumps({"answer": answer})
+        }, {})
+
+    assert json.loads(result1["body"])["ok"]
+
+    result2 = lambdae.match.get_answer(
+        make_json_event(
+            body_json="",
+            headers={"Cookie": "token=" + user1.get_token()}
+        ),
+        {}
+    )
+
+    assert json.loads(result2["body"])["answer"] == answer

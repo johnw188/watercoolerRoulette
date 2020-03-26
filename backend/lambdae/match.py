@@ -40,7 +40,7 @@ def match(event, context):
     random.shuffle(potential_matches)
 
     logger.info(user.user_id + " Searching through potential matches")
-    actions = [models.MatchesModel.match_id.set(user.user_id), models.MatchesModel.offer.set(offer)]
+    actions = [models.MatchesModel.match_id.set(user.user_id), models.MatchesModel.offer.set(json.dumps(offer))]
     for p_match in potential_matches:
         try:
             logger.info(user.user_id + " proposing match with " + p_match.user_id)
@@ -82,24 +82,21 @@ def match(event, context):
     )
 
 
-def _get_match(group_id, user_id):
-    matches_match_id = (models.MatchesModel.match_id == user_id) | (models.MatchesModel.user_id == user_id)
-    return next(models.MatchesModel.query(group_id, filter_condition=matches_match_id))
-
-
 def post_answer(event, context):
     user = auth.require_authorization(event)
-    match = _get_match(user.group_id, user.user_id)
-    event_dict = json.loads(event)
 
-    match.update(actions=[models.MatchesModel.answer.set(event_dict["answer"])])
+    matches_match_id = models.MatchesModel.match_id == user.user_id
+    match = next(models.MatchesModel.query(user.group_id, filter_condition=matches_match_id))
+    event_dict = json.loads(event["body"])
+
+    match.update(actions=[models.MatchesModel.answer.set(json.dumps(event_dict["answer"]))])
     return shared.json_success_response({})
 
 
 def get_answer(event, context):
     user = auth.require_authorization(event)
-    match = _get_match(user.group_id, user.user_id)
-    return shared.json_success_response({"answer": match.answer})
+    match = models.MatchesModel.get(user.group_id, user.user_id)
+    return shared.json_success_response({"answer": json.loads(match.answer)})
 
 
 def cleanup(event, context):

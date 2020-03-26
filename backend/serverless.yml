@@ -1,3 +1,5 @@
+org: meawoppl
+app: watercooler-express-app
 service: watercooler-express
 
 frameworkVersion: ">=1.2.0 <2.0.0"
@@ -31,25 +33,44 @@ provider:
 
 functions:
   match:
-    handler: lambdae/match.endpoint
+    handler: lambdae/match.match
     events:
       - http:
           path: match
           method: post
 
+  match_cleanup:
+    handler: lambdae/match.cleanup
+    events:
+      - schedule:
+          rate: rate(30 minutes)
+          enabled: true
+
   auth:
-    handler: lambdae/auth.endpoint
+    handler: lambdae/auth.slack_oauth
     events:
       - http:
           path: auth
           method: get
 
-  auth_win:
-    handler: lambdae/auth.make_test_users
+  get_answer:
+    handler: lambdae/match.get_answer
     events:
       - http:
-          path: fakes
+          path: answer
           method: get
+
+  post_answer:
+    handler: lambdae/match.post_answer
+    events:
+      - http:
+          path: answer
+          method: post
+
+
+  # sls invoke --stage dev --function make_test_users
+  auth_test_users:
+    handler: lambdae/auth.auth_test_users
 
 plugins:
   - serverless-domain-manager

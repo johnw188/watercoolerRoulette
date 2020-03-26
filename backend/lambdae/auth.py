@@ -1,10 +1,12 @@
-import urllib.request
-import urllib.parse
+import datetime
+import json
 
 import lambdae.shared as shared
 import lambdae.models as models
 
 import requests
+from http import cookies
+
 
 AUTH_CB_API = "https://slack.com/api/oauth.access"
 AUTH_TEST_API = "https://api.slack.com/api/auth.test"
@@ -15,8 +17,35 @@ OAUTH_SECRET = shared.get_env_var("OAUTH_SECRET")
 
 AFTER_AUTH_REDIRECT = "https://watercooler.express"
 
+
+COOKIE_ATTR_NAME = "token"
+
+
+class AuthException(Exception):
+    pass
+
+
+def require_authorization(event):
+    """
+    Take a lambda http event then:
+     - pull out the jwt token
+     - validate it
+     - look up the user
+     - return the user instance
+
+    If any of that fails, throw an auth exception
+    """
+
+    try:
+        auth_cookie = cookies.SimpleCookie()
+        auth_cookie.load(event["headers"]["Cookie"])
+        return models.UsersModel.from_token(auth_cookie[COOKIE_ATTR_NAME].value)
+    except Exception as e:
+        raise AuthException("Failure during auth") from e
+
+
 @shared.debug_wrapper
-def endpoint(event, context):
+def slack_oauth(event, context):
     # This is the redirect behavior when slack fails to auth
     query_params = event["queryStringParameters"]
     if "error" in query_params:
@@ -67,14 +96,22 @@ def endpoint(event, context):
     )
     user.save()
 
-    # Shoot the user a cookie with their JWT token, and redirect    
-    response_headers = {"Location": AFTER_AUTH_REDIRECT}
-    response_headers.update(user.get_jwt_token_header())
-    return {"statusCode": 302, "headers": response_headers}
+    # Figure out how to format/set the cookie
+    encoded = user.get_token()
+    expiry = (datetime.datetime.utcnow() + datetime.timedelta(days=1)).strftime("expires=%a, %d %b %Y %H:%M:%S GMT")
+    cookie_parts = (COOKIE_ATTR_NAME + "=" + encoded, "Domain=watercooler.express", expiry)
+    cookie = "; ".join(cookie_parts)
+
+    # Shoot the user a cookie with their JWT token, and redirect
+    headers = {
+        "Location": AFTER_AUTH_REDIRECT,
+        "Set-Cookie": cookie
+    }
+    return {"statusCode": 302, "headers": headers}
 
 
 @shared.debug_wrapper
-def make_test_users(event, context):
+def auth_test_users(event, context):
     for x in range(100):
         fake_user = models.UsersModel(
             user_id="fake" + str(x),

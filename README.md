@@ -77,3 +77,12 @@ Then, from within your project folder:
 npm run build
 surge public my-project.surge.sh
 ```
+
+## Backend testing
+
+Running the backend tests requires `pytest` and `pytest-env` modules
+
+```bash
+cd backend
+python3 -m pytest
+```

@@ -7,7 +7,8 @@ import lambdae.shared as shared
 from pynamodb.attributes import (UnicodeAttribute, UTCDateTimeAttribute, JSONAttribute)
 from pynamodb.models import Model
 
-USE_LOCAL_DYNAMO = "DYNAMO_HOST" in os.environ
+# Set by serverless when running locally/testing
+IS_LOCAL = "IS_LOCAL" in os.environ
 
 
 class AbstractTimestampedModel(Model):
@@ -15,7 +16,7 @@ class AbstractTimestampedModel(Model):
     updated_dt = UTCDateTimeAttribute(null=False)
 
     def save(self, *args, **kwargs):
-        self.updatedAt = datetime.datetime.now()
+        self.updated_dt = datetime.datetime.now()
         super(AbstractTimestampedModel, self).save(*args, **kwargs)
 
     def __iter__(self):
@@ -23,12 +24,12 @@ class AbstractTimestampedModel(Model):
             yield name, attr.serialize(getattr(self, name))
 
 
-class UsersModel(Model):
+class UsersModel(AbstractTimestampedModel):
     class Meta:
         table_name = shared.get_env_var("USERS_TABLE")
 
-        if USE_LOCAL_DYNAMO:
-            host = os.environ["DYNAMO_HOST"]
+        if IS_LOCAL:
+            host = "http://localhost:8000"
         else:
             region = "us-west-2"
 
@@ -40,18 +41,8 @@ class UsersModel(Model):
     slack_url = UnicodeAttribute(null=False)
     slack_avatar = UnicodeAttribute(null=False)
 
-    def get_jwt_token_header(self) -> str:
-        # JWT whatnot in here...
-        to_encode = {
-            "group_id": self.group_id,
-            "user_id": self.user_id,
-            "time": time.time()
-        }
-
-        encoded = shared.jwt_encode(to_encode)
-        exp_dt = datetime.datetime.utcnow() + datetime.timedelta(days=1)
-        extras = exp_dt.strftime("Domain=watercooler.express; expires=%a, %d %b %Y %H:%M:%S GMT")
-        return {"Set-Cookie": "token={0}; {1}".format(encoded, extras)}
+    def get_token(self) -> str:
+        return shared.jwt_issue(group_id=self.group_id, user_id=self.user_id)
 
     @staticmethod
     def from_token(token: str):
@@ -59,12 +50,12 @@ class UsersModel(Model):
         return UsersModel.get(token_data["group_id"], token_data["user_id"])
 
 
-class MatchesModel(Model):
+class MatchesModel(AbstractTimestampedModel):
     class Meta:
         table_name = shared.get_env_var("MATCHES_TABLE")
 
-        if USE_LOCAL_DYNAMO:
-            host = os.environ["DYNAMO_HOST"]
+        if IS_LOCAL:
+            host = "http://localhost:8000"
         else:
             region = "us-west-2"
 
@@ -72,4 +63,5 @@ class MatchesModel(Model):
     user_id = UnicodeAttribute(range_key=True, null=False)
 
     match_id = UnicodeAttribute(null=True)
-    room_blob = JSONAttribute(null=True)
+    offer = UnicodeAttribute(null=True)
+    answer = UnicodeAttribute(null=True)

@@ -1,6 +1,14 @@
 <script>
 	import SignIn from './SignIn.svelte';
 	import SelfVideo from './SelfVideo.svelte';
+	import webrtcConnect from './webrtcConnect.js'
+
+	let connection = new webrtcConnect()
+	let offer = "testing testing"
+	connection.createOffer()
+	connection.offerListener = (newOffer) => {
+		offer = JSON.stringify(newOffer)
+	}
 </script>
 
 <div class="mainContainer">
@@ -10,6 +18,7 @@
 <main>
 	<h1>Watercooler Roulette</h1>
 	<SignIn/>
+	<p>{offer}</p>
 </main>
 </div>
 

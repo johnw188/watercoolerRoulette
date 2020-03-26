@@ -82,9 +82,8 @@ if (navigator.webkitGetUserMedia) {
 }
 
 var cfg = {'iceServers': [{'url': "stun:stun.gmx.net"}]},
-con = { 'optional': [{'DtlsSrtpKeyAgreement': true}] }
 
-var pc1 = new RTCPeerConnection(cfg, con), dc1 = null, tn1 = null, activedc, pc1icedone = false;
+var pc1 = new RTCPeerConnection(cfg), dc1 = null, tn1 = null, activedc, pc1icedone = false;
 
 var sdpConstraints = {
   optional: [],
@@ -105,7 +104,7 @@ pc1.onicecandidate = function (e) {
   }
 }
 
-var pc2 = new RTCPeerConnection(cfg, con), dc2 = null, pc2icedone = false;
+var pc2 = new RTCPeerConnection(cfg), dc2 = null, pc2icedone = false;
 
 pc2.ondatachannel = function (e) {
   var datachannel = e.channel || e;

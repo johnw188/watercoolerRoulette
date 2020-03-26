@@ -1,55 +1,13 @@
 import functools
 import os
 import json
-import time
 import traceback
-
-import jwt
-
-# 1 day?
-MAX_TOKEN_AGE_SECONDS = 24 * 60 * 60
 
 
 def get_env_var(name: str) -> str:
-    value = os.environ.get(name, None) 
+    value = os.environ.get(name, None)
     assert value is not None, "Expected the environment variable \"{}\" to be set."
     return value
-
-
-JWT_ALGO = "HS256"
-JWT_SECRET = get_env_var("JWT_SECRET")
-
-
-def jwt_issue(*, group_id: str, user_id: str) -> str:
-    return jwt_encode({
-        "group_id": group_id,
-        "user_id": user_id,
-        "time": time.time()
-    })
-
-
-class TokenValidationError(Exception):
-    pass
-
-
-def jwt_validate(token: str) -> dict:
-    try:
-        result = jwt_decode(token)
-    except jwt.exceptions.PyJWTError as e:
-        raise TokenValidationError(e)
-
-    if result["time"] < time.time() - MAX_TOKEN_AGE_SECONDS:
-        raise TokenValidationError("Token is expired")
-
-    return result
-
-
-def jwt_encode(to_encode: dict) -> str:
-    return jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGO).decode()
-
-
-def jwt_decode(token: str) -> dict:
-    return jwt.decode(token.encode(), JWT_SECRET, algorithms=[JWT_ALGO])
 
 
 def _fmt_exception(e: Exception) -> str:

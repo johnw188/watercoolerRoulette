@@ -7,6 +7,9 @@ import lambdae.shared as shared
 from pynamodb.attributes import (UnicodeAttribute, UTCDateTimeAttribute, JSONAttribute)
 from pynamodb.models import Model
 
+USERS_TABLE = shared.get_env_var("USERS_TABLE")
+MATCHES_TABLE = shared.get_env_var("MATCHES_TABLE")
+
 # Set by serverless when running locally/testing
 IS_LOCAL = "IS_LOCAL" in os.environ
 
@@ -26,7 +29,7 @@ class AbstractTimestampedModel(Model):
 
 class UsersModel(AbstractTimestampedModel):
     class Meta:
-        table_name = shared.get_env_var("USERS_TABLE")
+        table_name = USERS_TABLE
 
         if IS_LOCAL:
             host = "http://localhost:8000"
@@ -41,18 +44,10 @@ class UsersModel(AbstractTimestampedModel):
     slack_url = UnicodeAttribute(null=False)
     slack_avatar = UnicodeAttribute(null=False)
 
-    def get_token(self) -> str:
-        return shared.jwt_issue(group_id=self.group_id, user_id=self.user_id)
-
-    @staticmethod
-    def from_token(token: str):
-        token_data = shared.jwt_decode(token)
-        return UsersModel.get(token_data["group_id"], token_data["user_id"])
-
 
 class MatchesModel(AbstractTimestampedModel):
     class Meta:
-        table_name = shared.get_env_var("MATCHES_TABLE")
+        table_name = MATCHES_TABLE
 
         if IS_LOCAL:
             host = "http://localhost:8000"

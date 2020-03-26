@@ -41,14 +41,6 @@ class UsersModel(AbstractTimestampedModel):
     slack_url = UnicodeAttribute(null=False)
     slack_avatar = UnicodeAttribute(null=False)
 
-    def get_token(self) -> str:
-        return shared.jwt_issue(group_id=self.group_id, user_id=self.user_id)
-
-    @staticmethod
-    def from_token(token: str):
-        token_data = shared.jwt_decode(token)
-        return UsersModel.get(token_data["group_id"], token_data["user_id"])
-
 
 class MatchesModel(AbstractTimestampedModel):
     class Meta:

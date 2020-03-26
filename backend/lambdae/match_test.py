@@ -6,6 +6,7 @@ import uuid
 import numpy as np
 
 import lambdae.match
+import lambdae.jwt_tokens as tokens
 import lambdae.models as models
 import lambdae.shared as shared
 
@@ -37,7 +38,7 @@ def test_match_timeout():
     user = add_fake_user("fakegroup-1", "fakeuser")
     result = lambdae.match.match(make_json_event(
         body_json={"offer": {"bar": "baz"}},
-        headers={"Cookie": "token=" + user.get_token()}
+        headers={"Cookie": "token=" + tokens.issue_token(user)}
     ), {})
     print(json.loads(result["body"])["message"])
     assert result["statusCode"] == 408
@@ -52,7 +53,7 @@ def request_match(group_id, user_id):
     for x in range(20):
         response = lambdae.match.match(make_json_event(
             body_json={"offer": {"bar": "baz"}},
-            headers={"Cookie": "token=" + user.get_token()}
+            headers={"Cookie": "token=" + tokens.issue_token(user)}
         ), {})
 
         results = json.loads(response["body"])
@@ -69,25 +70,25 @@ def request_match(group_id, user_id):
         else:
             logger.warning(results["message"])
             secs = results["timeout_ms"] / 1000
-            logger.warning("Cycle %i, no match, wating for %fs" % (n, secs))
+            logger.warning("Cycle %i, no match, wating for %fs" % (x, secs))
             time.sleep(secs)
 
     assert False, "Timed out"
 
 
 def test_simple():
-    _do_concurrent_matchs(2, 100)
+    _do_concurrent_matches(2, 100)
 
 
 def test_stress():
-    _do_concurrent_matchs(10, 200)
+    _do_concurrent_matches(10, 200)
 
 
 def ent():
     return uuid.uuid4().hex[::4]
 
 
-def _do_concurrent_matchs(concurrency: int, n_users: int):
+def _do_concurrent_matches(concurrency: int, n_users: int):
     fake_team = "faketeam" + ent()
     fake_teammates = ["fake%i-%s" % (i, ent()) for i in range(n_users)]
 
@@ -134,7 +135,7 @@ def test_answers():
     answer = {"bar": "baz"}
     result1 = lambdae.match.post_answer(
         {
-            "headers": {"Cookie": "token=" + user2.get_token()},
+            "headers": {"Cookie": "token=" + tokens.issue_token(user2)},
             "body": json.dumps({"answer": answer})
         }, {})
 
@@ -143,7 +144,7 @@ def test_answers():
     result2 = lambdae.match.get_answer(
         make_json_event(
             body_json="",
-            headers={"Cookie": "token=" + user1.get_token()}
+            headers={"Cookie": "token=" + tokens.issue_token(user1)}
         ),
         {}
     )

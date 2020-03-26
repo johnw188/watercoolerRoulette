@@ -6,6 +6,7 @@ import random
 import lambdae.auth as auth
 import lambdae.models as models
 import lambdae.shared as shared
+import lambdae.jwt_tokens as tokens
 
 import pynamodb.exceptions
 
@@ -27,7 +28,7 @@ def match_id_to_response(partner: str, offer: dict, offerer: bool) -> dict:
 
 @shared.debug_wrapper
 def match(event, context):
-    user = auth.require_authorization(event)
+    user = tokens.require_authorization(event)
     start_time = time.time()
 
     event_dict = json.loads(event["body"])
@@ -84,7 +85,7 @@ def match(event, context):
 
 
 def post_answer(event, context):
-    user = auth.require_authorization(event)
+    user = tokens.require_authorization(event)
 
     matches_match_id = models.MatchesModel.match_id == user.user_id
     match = next(models.MatchesModel.query(user.group_id, filter_condition=matches_match_id))
@@ -95,7 +96,7 @@ def post_answer(event, context):
 
 
 def get_answer(event, context):
-    user = auth.require_authorization(event)
+    user = tokens.require_authorization(event)
     match = models.MatchesModel.get(user.group_id, user.user_id)
     return shared.json_success_response({"answer": json.loads(match.answer)})
 

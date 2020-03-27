@@ -30,6 +30,15 @@ def debug_wrapper(f):
                     "ok": False,
                     "message": _fmt_exception(e)
                 })}
+
+        headers = response.get("headers", {})
+        headers.update({
+            # Look at this filthy hack
+            "Access-Control-Allow-Origin": event["headers"].get("Origin", event["headers"].get("origin", "*")),
+            "Access-Control-Allow-Credentials": True
+        })
+        response["headers"] = headers
+
         print("Response:\n" + json.dumps(response, indent=2))
         return response
 

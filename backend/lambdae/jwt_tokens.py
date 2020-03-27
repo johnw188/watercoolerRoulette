@@ -68,7 +68,8 @@ def get_jwt_cookie(user: models.UsersModel) -> str:
     """
     encoded = issue_token(user)
     expiry = (datetime.datetime.utcnow() + TOKEN_EXPIRY).strftime("expires=%a, %d %b %Y %H:%M:%S GMT")
-    cookie_parts = (COOKIE_ATTR_NAME + "=" + encoded, "Domain=watercooler.express", expiry)
+    # NB(meawoppl) The .watercooler.express must have the dot prefix to match the parent and all subdomains
+    cookie_parts = (COOKIE_ATTR_NAME + "=" + encoded, "Domain=.watercooler.express", expiry, "SameSite=None", "Secure")
     return "; ".join(cookie_parts)
 
 
@@ -80,7 +81,7 @@ def require_authorization(event) -> models.UsersModel:
      - look up the user
      - return the user instance
 
-    If any of that fails, throw an auth exception
+    If any of that fails, throw an `AuthException`
     """
 
     try:

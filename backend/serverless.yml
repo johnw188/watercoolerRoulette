@@ -30,6 +30,10 @@ provider:
         - dynamodb:DescribeTable
       Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.TABLE_PREFIX}-*"
 
+package:
+  exclude: 
+    - .dynamodb/**
+
 functions:
   match:
     handler: lambdae/match.match
@@ -37,6 +41,8 @@ functions:
       - http:
           path: match
           method: post
+          cors: true # <-- CORS!
+
 
   match_cleanup:
     handler: lambdae/match.cleanup
@@ -51,6 +57,7 @@ functions:
       - http:
           path: auth
           method: get
+          cors: true # <-- CORS!
 
   get_answer:
     handler: lambdae/match.get_answer
@@ -58,6 +65,7 @@ functions:
       - http:
           path: answer
           method: get
+          cors: true # <-- CORS!
 
   post_answer:
     handler: lambdae/match.post_answer
@@ -65,6 +73,7 @@ functions:
       - http:
           path: answer
           method: post
+          cors: true # <-- CORS!
 
 
   # sls invoke --stage dev --function make_test_users

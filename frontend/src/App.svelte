@@ -2,6 +2,10 @@
 	import SignIn from './SignIn.svelte';
 	import SelfVideo from './SelfVideo.svelte';
 	import WebRTCConnection from './webrtcConnect.js'
+	import Matcher from './matcher.js'
+
+	let m = new Matcher();
+	m.match({});
 
 	let connection = new WebRTCConnection()
 	let offer = "testing testing"

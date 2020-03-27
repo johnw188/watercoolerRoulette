@@ -33,10 +33,10 @@ def test_get_jwt_cookie():
 def test_require_authorization():
     group_id, user_id = "fakegroup-cookie", "fakegroup-user"
     user = models.UsersModel(group_id, user_id)
-    user.slack_username="usernameeeeee"
-    user.slack_avatar="foo"
-    user.slack_team="bar"
-    user.slack_url="baz"
+    user.slack_username = "usernameeeeee"
+    user.slack_avatar = "foo"
+    user.slack_team = "bar"
+    user.slack_url = "baz"
     user.delete()
 
     cookie = tokens.get_jwt_cookie(user)

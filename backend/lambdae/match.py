@@ -56,7 +56,13 @@ def match(event, context):
     waiting_match.match_id = None
     waiting_match.offer = None
     logger.info(user.user_id + " adding self to the waiting table")
-    waiting_match.save()
+
+    NO_EXISTING_RECORD = models.MatchesModel.group_id.does_not_exist() & models.MatchesModel.user_id.does_not_exist()
+    try:
+        waiting_match.save(condition=NO_EXISTING_RECORD)
+    except pynamodb.exceptions.SaveError:
+        logger.warning(user.user_id + "reentrant session?")
+        waiting_match.refresh()
 
     while time.time() - start_time < MAX_TIME_S:
         waiting_match.refresh(consistent_read=True)

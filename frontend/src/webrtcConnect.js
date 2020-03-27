@@ -1,4 +1,4 @@
-export default class webrtcConnection {
+export default class WebRTCConnection {
     constructor() {
         const configuration = {
             iceServers: [{
@@ -10,11 +10,15 @@ export default class webrtcConnection {
         this._offerListener = function(offer) {}
         this._answerListener = function(answer) {}
         this._isOfferer = true
+        this._remoteStreamListener = function(event) {}
         this._offerPeerConnection = new RTCPeerConnection(configuration)
         this._offerPeerConnection.onicecandidate = (event) => {
             if (event.candidate == null) {
                 this.offer = this._offerPeerConnection.localDescription
             }
+        }
+        this._offerPeerConnection.ontrack = (event) => {
+            this._remoteStreamListener(event)
         }
 
         this._answerPeerConnection = new RTCPeerConnection(configuration)
@@ -22,6 +26,9 @@ export default class webrtcConnection {
             if (event.candidate == null) {
                 this.answer = this._answerPeerConnection.localDescription
             }
+        }
+        this._answerPeerConnection.ontrack = (event) => {
+            this._remoteStreamListener(event)
         }
     }
 
@@ -67,6 +74,10 @@ export default class webrtcConnection {
         this._answerListener(answer)
     }
 
+    set remoteStreamListener(remoteStreamListener) {
+        this._remoteStreamListener = remoteStreamListener
+    }
+
     createOffer() {
         this._offerDC = this._offerPeerConnection.createDataChannel('test', {reliable: true})
         this._offerPeerConnection.createOffer().then((desc) => {
@@ -80,11 +91,17 @@ export default class webrtcConnection {
         this._offerPeerConnection.setRemoteDescription(answerDescription)
     }
 
+    _disableOfferStream() {
+
+    }
+
     answerOffer(offer) {
+        this._isOfferer = false
         let offerDescription = new RTCSessionDescription(offer)
         this._answerPeerConnection.setRemoteDescription(offerDescription)
         this._answerPeerConnection.createAnswer().then((desc) => {
             return this._offerPeerConnection.setLocalDescription(desc)
         }).then(() => {})
     }
+
 }

@@ -1,30 +1,32 @@
 <script>
 	import SignIn from './SignIn.svelte';
 	import SelfVideo from './SelfVideo.svelte';
-	import webrtcConnect from './webrtcConnect.js'
+	import WebRTCConnection from './webrtcConnect.js'
 
-	let connection = new webrtcConnect()
+	let connection = new WebRTCConnection()
 	let offer = "testing testing"
 	connection.createOffer()
 	connection.offerListener = (newOffer) => {
 		offer = JSON.stringify(newOffer)
 	}
+
 </script>
 
 <div class="mainContainer">
 <div class="video">
-	<SelfVideo/>
 </div>
 <main>
 	<h1>Watercooler Roulette</h1>
-	<SignIn/>
+	<!-- <SignIn/> -->
+	<video id="localVideo" autoplay muted></video>
+	<video id="remoteVideo" autoplay></video>
 	<p>{offer}</p>
 </main>
 </div>
 
 <style>
 	.mainContainer {
-		background-color: #333333;
+		/* background-color: #333333; */
 		position: relative;
 		width: 100%;
 		height: 100%;
@@ -46,7 +48,7 @@
 	}
 
 	h1 {
-		color: #ffffff;
+		/* color: #ffffff; */
 		font-size: 4em;
 		font-weight: 600;
 	}

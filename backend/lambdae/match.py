@@ -18,14 +18,14 @@ MAX_TIME_S = 5.0
 
 
 def get_timeout_rec_ms():
-    return int(random.uniform(0, 200))
+    return int(random.uniform(50, 500))
 
 
 def match_id_to_response(partner: str, offer: dict, offerer: bool) -> dict:
     return shared.json_success_response({"partner": partner, "offer": offer, "offerer": offerer})
 
 
-@shared.debug_wrapper
+@shared.json_request
 def match(event, context):
     user = tokens.require_authorization(event)
     start_time = time.time()
@@ -55,14 +55,9 @@ def match(event, context):
     waiting_match = models.MatchesModel(user.group_id, user.user_id)
     waiting_match.match_id = None
     waiting_match.offer = None
+    waiting_match.answer = None
     logger.info(user.user_id + " adding self to the waiting table")
-
-    NO_EXISTING_RECORD = models.MatchesModel.group_id.does_not_exist() & models.MatchesModel.user_id.does_not_exist()
-    try:
-        waiting_match.save(condition=NO_EXISTING_RECORD)
-    except pynamodb.exceptions.SaveError:
-        logger.warning(user.user_id + "reentrant session?")
-        waiting_match.refresh()
+    waiting_match.save()
 
     while time.time() - start_time < MAX_TIME_S:
         waiting_match.refresh(consistent_read=True)
@@ -88,6 +83,7 @@ def match(event, context):
     )
 
 
+@shared.json_request
 def post_answer(event, context):
     user = tokens.require_authorization(event)
 
@@ -99,6 +95,7 @@ def post_answer(event, context):
     return shared.json_success_response({})
 
 
+@shared.json_request
 def get_answer(event, context):
     user = tokens.require_authorization(event)
     match = models.MatchesModel.get(user.group_id, user.user_id)

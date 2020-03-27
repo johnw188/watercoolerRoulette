@@ -14,8 +14,7 @@ def _fmt_exception(e: Exception) -> str:
     return str(e) + "\n" + traceback.format_exc()
 
 
-# TODO DISABLE/Remove in prod? Idk
-def debug_wrapper(f):
+def json_request(f):
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
         event, context = args
@@ -28,6 +27,7 @@ def debug_wrapper(f):
                 "statusCode": 500,
                 "body": json.dumps({
                     "ok": False,
+                    # TODO DISABLE/Remove in prod? Idk
                     "message": _fmt_exception(e)
                 })}
 
@@ -35,7 +35,8 @@ def debug_wrapper(f):
         headers.update({
             # Look at this filthy hack
             "Access-Control-Allow-Origin": event["headers"].get("Origin", event["headers"].get("origin", "*")),
-            "Access-Control-Allow-Credentials": True
+            "Access-Control-Allow-Credentials": True,
+            "Content-Type": "application/json"
         })
         response["headers"] = headers
 

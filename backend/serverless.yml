@@ -76,10 +76,6 @@ functions:
           cors: true # <-- CORS!
 
 
-  # sls invoke --stage dev --function make_test_users
-  auth_test_users:
-    handler: lambdae/auth.auth_test_users
-
 plugins:
   - serverless-domain-manager
   - serverless-dynamodb-local

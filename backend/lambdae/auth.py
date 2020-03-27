@@ -16,7 +16,7 @@ OAUTH_SECRET = shared.get_env_var("OAUTH_SECRET")
 AFTER_AUTH_REDIRECT = "https://watercooler.express"
 
 
-@shared.debug_wrapper
+@shared.json_request
 def slack_oauth(event, context):
     # This is the redirect behavior when slack fails to auth
     query_params = event["queryStringParameters"]
@@ -74,19 +74,3 @@ def slack_oauth(event, context):
         "Set-Cookie": tokens.get_jwt_cookie(user)
     }
     return {"statusCode": 302, "headers": headers}
-
-
-@shared.debug_wrapper
-def auth_test_users(event, context):
-    for x in range(100):
-        fake_user = models.UsersModel(
-            user_id="fake" + str(x),
-            group_id="faketeam",
-            slack_username="fakeusername" + str(x),
-            slack_team="idk",
-            slack_url="www.nowhere.slack.com",
-            slack_avatar="http://via.placeholder.com/192x192"
-        )
-        fake_user.save()
-
-    return {"statusCode": 200, "body": "Fake users created"}

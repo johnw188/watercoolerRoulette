@@ -3,7 +3,6 @@ import json
 import time
 import random
 
-import lambdae.auth as auth
 import lambdae.models as models
 import lambdae.shared as shared
 import lambdae.jwt_tokens as tokens
@@ -70,7 +69,6 @@ def match(event, context):
     try:
         waiting_match.delete(condition=models.MatchesModel.match_id.does_not_exist())
     except pynamodb.exceptions.DeleteError:
-        # NB(meawoppl) this case is likely untested
         waiting_match.refresh()
         logger.info(user.user_id + " matched at last call with " + waiting_match.match_id)
         return match_id_to_response(waiting_match.match_id, waiting_match.offer, False)

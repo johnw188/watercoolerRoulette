@@ -7,24 +7,26 @@ import jwt
 import lambdae.models as models
 import lambdae.shared as shared
 
+import pynamodb.exceptions
+
 
 JWT_ALGO = "HS256"
 JWT_SECRET = shared.get_env_var("JWT_SECRET")
 COOKIE_ATTR_NAME = "token"
 
 # 1 day?
-MAX_TOKEN_AGE_SECONDS = 24 * 60 * 60
+TOKEN_EXPIRY = datetime.timedelta(days=1)
 
 
 class TokenValidationError(Exception):
     pass
 
 
-def jwt_issue(*, group_id: str, user_id: str) -> str:
+def jwt_issue(*, group_id: str, user_id: str, t: float = None) -> str:
     return jwt_encode({
         "group_id": group_id,
         "user_id": user_id,
-        "time": time.time()
+        "time": time.time() if t is None else t
     })
 
 
@@ -32,10 +34,10 @@ def jwt_validate(token: str) -> dict:
     try:
         result = jwt_decode(token)
     except jwt.exceptions.PyJWTError as e:
-        raise TokenValidationError(e)
+        raise AuthException(e)
 
-    if result["time"] < time.time() - MAX_TOKEN_AGE_SECONDS:
-        raise TokenValidationError("Token is expired")
+    if result["time"] < time.time() - TOKEN_EXPIRY.total_seconds():
+        raise AuthException("Token is expired")
 
     return result
 
@@ -53,15 +55,21 @@ class AuthException(Exception):
 
 
 def issue_token(user: models.UsersModel) -> str:
+    """
+    Given a user instance compute the jwt token for it.
+    """
     return jwt_issue(group_id=user.group_id, user_id=user.user_id)
 
 
 def get_jwt_cookie(user: models.UsersModel) -> str:
+    """
+    Get the string which when used with `set-cookie` in headers to set the cookie
+    to "token=blah.blah.blah; etc"
+    """
     encoded = issue_token(user)
-    expiry = (datetime.datetime.utcnow() + datetime.timedelta(days=1)).strftime("expires=%a, %d %b %Y %H:%M:%S GMT")
+    expiry = (datetime.datetime.utcnow() + TOKEN_EXPIRY).strftime("expires=%a, %d %b %Y %H:%M:%S GMT")
     cookie_parts = (COOKIE_ATTR_NAME + "=" + encoded, "Domain=watercooler.express", expiry)
-    cookie = "; ".join(cookie_parts)
-    return cookie
+    return "; ".join(cookie_parts)
 
 
 def require_authorization(event) -> models.UsersModel:
@@ -76,9 +84,22 @@ def require_authorization(event) -> models.UsersModel:
     """
 
     try:
+        raw_cookie = event["headers"]["Cookie"]
+    except KeyError:
+        raise AuthException("No cookie found in headers")
+
+    print(raw_cookie)
+    try:
         auth_cookie = cookies.SimpleCookie()
-        auth_cookie.load(event["headers"]["Cookie"])
-        validated = jwt_validate(auth_cookie[COOKIE_ATTR_NAME].value)
-        return models.UsersModel.get(validated["group_id"], validated["user_id"])
+        auth_cookie.load(raw_cookie)
+        cookie_value = auth_cookie[COOKIE_ATTR_NAME].value
     except Exception as e:
-        raise AuthException("Failure during auth") from e
+        raise AuthException("Malformed cookie") from e
+
+    # Already raises AuthException if failure
+    validated = jwt_validate(cookie_value)
+
+    try:
+        return models.UsersModel.get(validated["group_id"], validated["user_id"])
+    except pynamodb.exceptions.DoesNotExist:
+        raise AuthException("No such user.")

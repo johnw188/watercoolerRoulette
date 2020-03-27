@@ -22,14 +22,17 @@ def debug_wrapper(f):
         print("Request to " + str(f.__name__) + ":\n" + json.dumps(event, indent=2))
 
         try:
-            return f(*args, **kwargs)
+            response = f(*args, **kwargs)
         except Exception as e:
-            return {
+            response = {
                 "statusCode": 500,
                 "body": json.dumps({
                     "ok": False,
                     "message": _fmt_exception(e)
                 })}
+        print("Response:\n" + json.dumps(response, indent=2))
+        return response
+
     return wrapper
 
 

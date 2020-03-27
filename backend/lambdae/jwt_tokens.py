@@ -7,6 +7,8 @@ import jwt
 import lambdae.models as models
 import lambdae.shared as shared
 
+import pynamodb.exceptions
+
 
 JWT_ALGO = "HS256"
 JWT_SECRET = shared.get_env_var("JWT_SECRET")
@@ -20,11 +22,11 @@ class TokenValidationError(Exception):
     pass
 
 
-def jwt_issue(*, group_id: str, user_id: str) -> str:
+def jwt_issue(*, group_id: str, user_id: str, t: float = None) -> str:
     return jwt_encode({
         "group_id": group_id,
         "user_id": user_id,
-        "time": time.time()
+        "time": time.time() if t is None else t
     })
 
 
@@ -32,10 +34,10 @@ def jwt_validate(token: str) -> dict:
     try:
         result = jwt_decode(token)
     except jwt.exceptions.PyJWTError as e:
-        raise TokenValidationError(e)
+        raise AuthException(e)
 
     if result["time"] < time.time() - TOKEN_EXPIRY.total_seconds():
-        raise TokenValidationError("Token is expired")
+        raise AuthException("Token is expired")
 
     return result
 
@@ -82,9 +84,22 @@ def require_authorization(event) -> models.UsersModel:
     """
 
     try:
+        raw_cookie = event["headers"]["Cookie"]
+    except KeyError:
+        raise AuthException("No cookie found in headers")
+
+    print(raw_cookie)
+    try:
         auth_cookie = cookies.SimpleCookie()
-        auth_cookie.load(event["headers"]["Cookie"])
-        validated = jwt_validate(auth_cookie[COOKIE_ATTR_NAME].value)
-        return models.UsersModel.get(validated["group_id"], validated["user_id"])
+        auth_cookie.load(raw_cookie)
+        cookie_value = auth_cookie[COOKIE_ATTR_NAME].value
     except Exception as e:
-        raise AuthException("Failure during auth") from e
+        raise AuthException("Malformed cookie") from e
+
+    # Already raises AuthException if failure
+    validated = jwt_validate(cookie_value)
+
+    try:
+        return models.UsersModel.get(validated["group_id"], validated["user_id"])
+    except pynamodb.exceptions.DoesNotExist:
+        raise AuthException("No such user.")

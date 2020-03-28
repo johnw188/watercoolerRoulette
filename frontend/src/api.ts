@@ -1,12 +1,10 @@
-import WebRTCConnection from './webrtcConnect.js'
-
 export default class API {
     public static MATCH_URL = 'https://api.watercooler.express/match';
-
+    public static ANSWER_URL = 'https://api.watercooler.express/answer';
     constructor() {
     }
 
-    private async _match(offer: object): Promise<string> {
+    private async _xhr_promise(method: string, url: string, data: object): Promise<XMLHttpRequest> {
         return new Promise((resolve, reject) => {
             const xhr = new XMLHttpRequest();
 
@@ -16,8 +14,27 @@ export default class API {
                 console.log();
                 if (xhr.status == 200) {
                     // If successful
-                    resolve(xhr.response);
-                } else if (xhr.status == 408) {
+                    resolve(xhr);
+                } else {
+                    console.log("Timeout during matching")
+                    reject(xhr)
+                };
+            });
+
+            xhr.open(method, url);
+            xhr.withCredentials = true;
+            xhr.responseType = "json"
+            xhr.send(JSON.stringify(data));
+        });
+    }
+
+    private async _match(offer: object): Promise<string> {
+        return new Promise((resolve, reject)=>{
+            var xhr_promise: Promise<XMLHttpRequest> = this._xhr_promise("POST", API.MATCH_URL, {offer: offer});
+
+            xhr_promise.then((xhr)=>resolve(xhr.response.match_id));
+            xhr_promise.catch((xhr)=>{
+                if (xhr.status == 408) {
                     console.log("Timeout during matching")
                     reject({timeout_ms: xhr.response.timeout_ms})
                 } else {
@@ -25,15 +42,11 @@ export default class API {
                     // If failed
                     reject({
                         status: xhr.status,
-                        statusText: xhr.statusText
+                        statusText: xhr.statusText,
+                        response: xhr.response
                     });
-                };
+                }
             });
-
-            xhr.open("POST", API.MATCH_URL);
-            xhr.withCredentials = true;
-            xhr.responseType = "json"
-            xhr.send(JSON.stringify({offer: offer}));
         });
     }
 
@@ -58,4 +71,17 @@ export default class API {
             }
         }
     }
+
+    public async post_answer(answer: object): Promise<void>{
+        this._xhr_promise("POST", API.ANSWER_URL, {answer: answer});
+    }
+
+    public async get_answer(): Promise<object> {
+        return new Promise((resolve, reject)=>{
+            this._xhr_promise("GET", API.ANSWER_URL, null).then(
+                    (xhr: XMLHttpRequest)=>resolve(xhr.response.answer)
+            )
+        });
+    }
+
 }

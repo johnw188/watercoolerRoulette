@@ -2,7 +2,7 @@
 	import SignIn from './SignIn.svelte';
 	import SelfVideo from './SelfVideo.svelte';
 	import WebRTCConnection from './webrtcConnect.js'
-	import API from './matcher.js'
+	import API from './api.ts'
 
 	let api = new API();
 	api.match({});

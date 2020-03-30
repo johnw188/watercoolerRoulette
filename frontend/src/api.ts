@@ -16,7 +16,6 @@ export default class API {
                     // If successful
                     resolve(xhr);
                 } else {
-                    console.log("Timeout during matching")
                     reject(xhr)
                 };
             });
@@ -66,7 +65,7 @@ export default class API {
             } catch(e) {
                 if(e.timeout_ms){
                     wait_ms = e.timeout_ms;
-                    console.log("Wait timeout updated to " + wait_ms.toString())
+                    console.log("Wait timeout updated to " + wait_ms.toString());
                 }
             }
         }

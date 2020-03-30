@@ -43,7 +43,6 @@ functions:
           method: post
           cors: true # <-- CORS!
 
-
   match_cleanup:
     handler: lambdae/match.cleanup
     events:
@@ -58,6 +57,18 @@ functions:
           path: auth
           method: get
           cors: true # <-- CORS!
+
+  user_info:
+    handler: lambdae/user.get_user_info
+    events:
+      - http:
+          path: user/{id}
+          method: get
+          request:
+            parameters:
+              querystrings:
+                id: false
+          cors: true
 
   get_answer:
     handler: lambdae/match.get_answer

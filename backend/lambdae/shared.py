@@ -74,7 +74,8 @@ def json_request(f):
                 })}
 
         # Remember to encode your bodies kids
-        assert type(response["body"]) == str
+        if "body" in response:
+            assert type(response["body"]) == str
 
         # Patch any headers added with the appropriate stuffs
         headers = response.get("headers", {})

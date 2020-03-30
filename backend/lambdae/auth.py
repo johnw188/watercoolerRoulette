@@ -23,8 +23,6 @@ def slack_oauth(event, context):
     if "error" in query_params:
         return shared.json_error_response("Oauth Error Redirect by Slack to here", 403)
 
-    print(query_params)
-
     # Ask slack if user is legit
     auth_params = {
         "client_id": OAUTH_ID,

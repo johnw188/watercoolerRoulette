@@ -5,7 +5,6 @@
 	import API from './api.ts'
 
 	let api = new API();
-	api.match({});
 
 	let connection = new WebRTCConnection()
 	let offer = "testing testing"
@@ -14,6 +13,10 @@
 		offer = JSON.stringify(newOffer)
 	}
 
+	function handleClick(event) {
+		console.log("Clicked!")
+		api.match({});
+	}
 </script>
 
 <div class="mainContainer">
@@ -21,7 +24,7 @@
 </div>
 <main>
 	<h1>Watercooler Roulette</h1>
-	<SignIn/>
+	<SignIn on:click={handleClick}/>
 	<video id="localVideo" autoplay muted></video>
 	<video id="remoteVideo" autoplay></video>
 	<p>{offer}</p>

@@ -7,8 +7,8 @@
     "start": "sirv public"
   },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^11.0.0",
-    "@rollup/plugin-node-resolve": "^7.0.0",
+    "@rollup/plugin-commonjs": "^11.0.2",
+    "@rollup/plugin-node-resolve": "^7.1.1",
     "@rollup/plugin-typescript": "^4.0.0",
     "rollup": "^1.32.1",
     "rollup-plugin-livereload": "^1.0.0",
@@ -19,7 +19,8 @@
     "typescript": "^3.8.3"
   },
   "dependencies": {
-    "dev": "^0.1.3",
+    "js-cookie": "^2.2.1",
+    "jwt-decode": "^2.2.0",
     "sirv-cli": "^0.4.4",
     "tslint": "^6.1.0"
   }

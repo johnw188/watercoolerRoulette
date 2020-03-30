@@ -1,5 +1,16 @@
 <script>
+    import jwtDecode from 'jwt-decode';
+    import cookies from 'js-cookie';
+
     let user = { loggedIn: false }
+
+    let token = cookies.get("token")
+    if (token != null) {
+        let decoded = jwtDecode(token)
+        user.loggedIn = true
+    } else {
+        user.loggedIn = false
+    }
 </script>
 
 <main>

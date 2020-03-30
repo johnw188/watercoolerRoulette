@@ -20,6 +20,8 @@ export default {
 	},
 	plugins: [
 		typescript(),
+		resolve(),
+		commonjs(),
 
 		svelte({
 			// enable run-time checks when not in production

@@ -1,3 +1,4 @@
+import datetime
 import functools
 import os
 import json
@@ -7,8 +8,18 @@ import traceback
 COOKIE_ATTR_NAME = "token"
 
 
+def cookie_format(body: str, expiry: datetime.datetime):
+    cookie_parts = (
+        COOKIE_ATTR_NAME + "=" + body,
+        "Domain=.watercooler.express",
+        expiry.strftime("expires=%a, %d %b %Y %H:%M:%S GMT"),
+        "SameSite=None",
+        "Secure")
+    return "; ".join(cookie_parts)
+
+
 def get_expired_cookie() -> str:
-    return COOKIE_ATTR_NAME + "=; expires=Thu, 01 Jan 1970 00:00:01 GMT;"
+    return cookie_format("", datetime.datetime(1970, 1, 1))
 
 
 def get_env_var(name: str) -> str:

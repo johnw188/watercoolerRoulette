@@ -54,16 +54,15 @@ def issue_token(user: models.UsersModel) -> str:
     return jwt_issue(group_id=user.group_id, user_id=user.user_id)
 
 
-def get_jwt_cookie(user: models.UsersModel) -> str:
+def get_jwt_cookie(user: models.UsersModel = None) -> str:
     """
     Get the string which when used with `set-cookie` in headers to set the cookie
     to "token=blah.blah.blah; etc"
     """
-    encoded = issue_token(user)
-    expiry = (datetime.datetime.utcnow() + TOKEN_EXPIRY).strftime("expires=%a, %d %b %Y %H:%M:%S GMT")
-    # NB(meawoppl) The .watercooler.express must have the dot prefix to match the parent and all subdomains
-    cookie_parts = (shared.COOKIE_ATTR_NAME + "=" + encoded, "Domain=.watercooler.express", expiry, "SameSite=None", "Secure")
-    return "; ".join(cookie_parts)
+    body = issue_token(user)
+    expiry = datetime.datetime.utcnow() + TOKEN_EXPIRY
+
+    return shared.cookie_format(body, expiry)
 
 
 def require_authorization(event) -> models.UsersModel:
@@ -82,7 +81,6 @@ def require_authorization(event) -> models.UsersModel:
     except KeyError:
         raise shared.AuthException("No cookie found in headers")
 
-    print(raw_cookie)
     try:
         auth_cookie = cookies.SimpleCookie()
         auth_cookie.load(raw_cookie)

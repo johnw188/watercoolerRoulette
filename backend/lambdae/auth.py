@@ -52,8 +52,8 @@ def _do_slack_oauth(code: str):
     assert profile_resp["ok"], profile_resp
 
     return dict(
-        user_id=team_result["user_id"],
         group_id=team_result["team_id"],
+        user_id=team_result["user_id"],
         username=team_result["user"],
         teamname=team_result["team"],
         url=team_result["url"],

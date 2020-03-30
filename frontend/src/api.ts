@@ -1,7 +1,11 @@
 export default class API {
     public static MATCH_URL = 'https://api.watercooler.express/match';
     public static ANSWER_URL = 'https://api.watercooler.express/answer';
+    public static USER_URL = 'https://api.watercooler.express/answer';
+
+
     constructor() {
+
     }
 
     private async _xhr_promise(method: string, url: string, data: object): Promise<XMLHttpRequest> {
@@ -83,4 +87,13 @@ export default class API {
         });
     }
 
+    public async get_user_info(user: string): Promise<object> {
+        return new Promise((resolve, reject)=>{
+            var url = API.USER_URL
+            url = user ? url + "/" + user: url;
+            this._xhr_promise("GET", url, null).then(
+                    (xhr: XMLHttpRequest)=>resolve(xhr.response)
+            );
+        });
+    }
 }

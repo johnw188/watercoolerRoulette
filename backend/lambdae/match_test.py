@@ -8,7 +8,7 @@ import numpy as np
 import lambdae.match
 import lambdae.jwt_tokens as tokens
 import lambdae.models as models
-import lambdae.shared as shared
+import lambdae.models_testlib as models_testlib
 
 
 import logging
@@ -20,23 +20,8 @@ def make_json_event(*, body_json: dict, headers: dict) -> dict:
     return {"body": json.dumps(body_json), "headers": headers}
 
 
-def add_fake_user(group_id: str, user_id: str):
-    user = models.UsersModel(
-        group_id=group_id,
-        user_id=user_id,
-        username="slacker",
-        teamname="slackersteam",
-        url="notreal.slack.com",
-        email="an_email_for_sure",
-        avatar="http://placeholder.com/192x192"
-    )
-    user.save()
-
-    return user
-
-
 def test_match_timeout():
-    user = add_fake_user("fakegroup-1", "fakeuser")
+    user = models_testlib.create_fake_users("fakegroup-1", 1)[0]
     result = lambdae.match.match(make_json_event(
         body_json={"offer": {"bar": "baz"}},
         headers={"Cookie": "token=" + tokens.issue_token(user)}
@@ -48,7 +33,7 @@ def test_match_timeout():
 
 def request_match(group_id, user_id):
     # Forge myself a JWT token
-    user = add_fake_user(group_id, user_id)
+    user = models_testlib.create_fake_users(group_id, 1)[0]
 
     start_time = time.time()
     for x in range(20):
@@ -63,11 +48,11 @@ def request_match(group_id, user_id):
             logger.error(results)
 
         if(results["ok"]):
-            return (user_id, dict(
+            return (user.user_id, dict(
                 time=time.time() - start_time,
                 partner=results["partner"],
                 offer=results["offer"],
-                cycles=x+1))
+                cycles=x + 1))
         else:
             logger.warning(results["message"])
             secs = results["timeout_ms"] / 1000
@@ -125,14 +110,14 @@ def _do_concurrent_matches(concurrency: int, n_users: int):
 
 
 def test_answers():
-    group = "fakegroup-ans"
-    user1 = add_fake_user(group, "fake-usr-1")
-    user2 = add_fake_user(group, "fake-usr-2")
+    user1, user2 = models_testlib.create_fake_users("fakegroup-ans", 2)
 
-    match = models.MatchesModel(group, user1.user_id)
-    match.match_id = "fake-usr-2"
+    # Emulate the matching process having already finished
+    match = models.MatchesModel(user1.group_id, user1.user_id)
+    match.match_id = user2.user_id
     match.save()
 
+    # Post an answer
     answer = {"bar": "baz"}
     result1 = lambdae.match.post_answer(
         {
@@ -142,6 +127,7 @@ def test_answers():
 
     assert json.loads(result1["body"])["ok"]
 
+    # Get the answer from the other side
     result2 = lambdae.match.get_answer(
         make_json_event(
             body_json="",

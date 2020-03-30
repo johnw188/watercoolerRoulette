@@ -26,7 +26,7 @@ def json_request(f):
 
         try:
             response = f(*args, **kwargs)
-        except AuthException as e:
+        except AuthException:
             response = {"statusCode": 401, "body": {"ok": False, "message": "User is not logged in"}}
         except Exception as e:
             response = {

@@ -11,6 +11,23 @@ def test_user_unauth():
     assert results["statusCode"] == 401
 
 
+def test_user_get_noexist():
+    user1 = models_testlib.create_fake_users("fake_group1", 1)[0]
+
+    # Should return user info for self if path params are unset
+    results = lambdae.user.get_user_info(
+        {
+            "headers": {"Cookie": tokens.get_jwt_cookie(user1)},
+            "pathParameters": {"id": "nonexistant"}
+        }, {})
+
+    response = json.loads(results["body"])
+
+    assert results["statusCode"] == 404
+    assert not response["ok"]
+    assert "does not exist" in response["message"]
+
+
 def test_user_get_self():
     user1, user2 = models_testlib.create_fake_users("fake_group1", 2)
 

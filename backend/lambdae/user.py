@@ -6,7 +6,7 @@ import lambdae.models as models
 @shared.json_request
 def get_user_info(event, context):
     user = tokens.require_authorization(event)
-    
+
     if event["pathParameters"] is None:
         path_params = {}
     else:

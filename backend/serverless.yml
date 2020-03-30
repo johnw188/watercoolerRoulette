@@ -33,6 +33,9 @@ provider:
 package:
   exclude: 
     - .dynamodb/**
+    - node_modules/**
+    - requirements/botocore*/**
+
 
 functions:
   match:

@@ -77,10 +77,6 @@ def test_require_authorization_expired():
     token = tokens.jwt_issue(group_id="group", user_id="user", t=time.time() - tokens.TOKEN_EXPIRY.total_seconds() - 1)
     fake_aws_events = {"headers": {"Cookie": "token=" + token}}
 
-    try:
+    with pytest.raises(shared.AuthException) as e:
         tokens.require_authorization(fake_aws_events)
-    except shared.AuthException as e:
-        assert "Token is expired" in str(e)
-        return
-
-    assert False, "Unreachable"
+    assert "Token is expired" in str(e)

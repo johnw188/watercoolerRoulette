@@ -16,6 +16,7 @@ OAUTH_SECRET = shared.get_env_var("OAUTH_SECRET")
 AFTER_AUTH_REDIRECT = "https://watercooler.express"
 
 
+# NB: This call is not unit tested
 def _do_slack_oauth(code: str):
     # Ask slack if user is legit
     auth_params = {
@@ -66,7 +67,7 @@ def slack_oauth(event, context, slack_oauth_call=_do_slack_oauth):
     # This is the redirect behavior when slack fails to auth
     query_params = event["queryStringParameters"]
     if "error" in query_params:
-        return shared.json_error_response("Oauth Error Redirect by Slack to here", 403)
+        return shared.json_error_response(message="Oauth Error Redirect by Slack to here", code=403)
 
     user_kwargs = slack_oauth_call(query_params["code"])
     user = models.UsersModel(**user_kwargs)

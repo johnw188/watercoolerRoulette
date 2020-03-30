@@ -21,7 +21,7 @@
 </div>
 <main>
 	<h1>Watercooler Roulette</h1>
-	<!-- <SignIn/> -->
+	<SignIn/>
 	<video id="localVideo" autoplay muted></video>
 	<video id="remoteVideo" autoplay></video>
 	<p>{offer}</p>

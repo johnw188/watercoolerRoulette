@@ -18,17 +18,32 @@ class AuthException(Exception):
     pass
 
 
+def get_header(headers: dict, keyname: str, default: str) -> str:
+    """
+    This function deals with the inconsistent key casing :(
+
+    A fine example of why we can't have nice things
+    """
+    for k, v in headers.items():
+        if k.lower() == keyname.lower():
+            return v
+    return default
+
+
 def json_request(f):
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
         event, context = args
         print("Request to " + str(f.__name__) + ":\n" + json.dumps(event, indent=2))
+        request_headers = event.get("headers", {})
 
         try:
             response = f(*args, **kwargs)
         except AuthException:
             response = {"statusCode": 401, "body": {"ok": False, "message": "User is not logged in"}}
         except Exception as e:
+            print("Unhandled Exception!!!")
+            print(_fmt_exception(e))
             response = {
                 "statusCode": 500,
                 "body": json.dumps({
@@ -37,11 +52,11 @@ def json_request(f):
                     "message": _fmt_exception(e)
                 })}
 
+        # Patch any headers added with the appropriate stuffs
         headers = response.get("headers", {})
-        origin = headers.get("Origin", headers.get("origin", "*"))
         headers.update({
             # Look at this filthy hack
-            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Origin": get_header(request_headers, "Origin", "*"),
             "Access-Control-Allow-Credentials": True,
             "Content-Type": "application/json"
         })

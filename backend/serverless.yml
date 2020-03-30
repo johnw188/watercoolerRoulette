@@ -73,6 +73,11 @@ functions:
                 id: false
           cors: true
 
+      - http:
+          path: user
+          method: get
+          cors: true
+
   get_answer:
     handler: lambdae/match.get_answer
     events:

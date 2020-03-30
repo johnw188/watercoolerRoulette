@@ -6,7 +6,13 @@ import lambdae.models as models
 @shared.json_request
 def get_user_info(event, context):
     user = tokens.require_authorization(event)
-    user_id_to_get = event['pathParameters'].get('id', user.user_id)
+    
+    if event["pathParameters"] is None:
+        path_params = {}
+    else:
+        path_params = event["pathParameters"]
+
+    user_id_to_get = path_params.get('id', user.user_id)
 
     try:
         user_queried = models.UsersModel.get(user.group_id, user_id_to_get)

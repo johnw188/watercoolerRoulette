@@ -7,8 +7,6 @@ import jwt
 import lambdae.models as models
 import lambdae.shared as shared
 
-import pynamodb.exceptions
-
 
 JWT_ALGO = "HS256"
 JWT_SECRET = shared.get_env_var("JWT_SECRET")
@@ -98,5 +96,5 @@ def require_authorization(event) -> models.UsersModel:
 
     try:
         return models.UsersModel.get(validated["group_id"], validated["user_id"])
-    except pynamodb.exceptions.DoesNotExist:
+    except models.UsersModel.DoesNotExist:
         raise shared.AuthException("No such user.")

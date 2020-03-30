@@ -35,7 +35,7 @@ def test_user_get_self():
     results = lambdae.user.get_user_info(
         {
             "headers": {"Cookie": tokens.get_jwt_cookie(user1)},
-            "pathParameters": {}
+            "pathParameters": None  # This is returned for no path params
         }, {})
 
     response = json.loads(results["body"])

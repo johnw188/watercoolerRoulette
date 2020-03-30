@@ -40,7 +40,7 @@ def json_request(f):
         try:
             response = f(*args, **kwargs)
         except AuthException:
-            response = {"statusCode": 401, "body": {"ok": False, "message": "User is not logged in"}}
+            response = {"statusCode": 401, "body": json.dumps({"ok": False, "message": "User is not logged in"})}
         except Exception as e:
             print("Unhandled Exception!!!")
             print(_fmt_exception(e))
@@ -51,6 +51,9 @@ def json_request(f):
                     # TODO DISABLE/Remove in prod? Idk
                     "message": _fmt_exception(e)
                 })}
+
+        # Remember to encode your bodies kids
+        assert type(response["body"]) == str
 
         # Patch any headers added with the appropriate stuffs
         headers = response.get("headers", {})

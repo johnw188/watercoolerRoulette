@@ -61,10 +61,11 @@ def slack_oauth(event, context):
     user = models.UsersModel(
         user_id=team_result["user_id"],
         group_id=team_result["team_id"],
-        slack_username=team_result["user"],
-        slack_team=team_result["team"],
-        slack_url=team_result["url"],
-        slack_avatar=profile_resp["profile"]["image_192"]
+        username=team_result["user"],
+        teamname=team_result["team"],
+        url=team_result["url"],
+        avatar=profile_resp["profile"]["image_192"],
+        email=profile_resp["profile"]["email"]
     )
     user.save()
 

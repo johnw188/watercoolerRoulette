@@ -33,6 +33,13 @@ def match(event, context):
     event_dict = json.loads(event["body"])
     offer = event_dict["offer"]
 
+    # The user should not have a match record. Delete it, and log if that was successful
+    try:
+        models.MatchesModel(user.group_id, user.user_id).delete()
+        logger.warning(user.user_id + " found hanging match record.")
+    except pynamodb.exceptions.DeleteError:
+        pass
+
     HAS_NO_MATCH = models.MatchesModel.match_id.does_not_exist()
 
     # Get the unmatched people in my group

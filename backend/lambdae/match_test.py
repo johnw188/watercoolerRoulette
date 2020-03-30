@@ -24,10 +24,11 @@ def add_fake_user(group_id: str, user_id: str):
     user = models.UsersModel(
         group_id=group_id,
         user_id=user_id,
-        slack_username="slacker",
-        slack_team="slackersteam",
-        slack_url="notreal.slack.com",
-        slack_avatar="http://placeholder.com/192x192"
+        username="slacker",
+        teamname="slackersteam",
+        url="notreal.slack.com",
+        email="an_email_for_sure",
+        avatar="http://placeholder.com/192x192"
     )
     user.save()
 

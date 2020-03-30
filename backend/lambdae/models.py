@@ -1,10 +1,9 @@
 import datetime
 import os
-import time
 
 import lambdae.shared as shared
 
-from pynamodb.attributes import (UnicodeAttribute, UTCDateTimeAttribute, JSONAttribute)
+from pynamodb.attributes import (UnicodeAttribute, UTCDateTimeAttribute)
 from pynamodb.models import Model
 
 USERS_TABLE = shared.get_env_var("USERS_TABLE")
@@ -39,10 +38,11 @@ class UsersModel(AbstractTimestampedModel):
     group_id = UnicodeAttribute(hash_key=True, null=False)
     user_id = UnicodeAttribute(range_key=True, null=False)
 
-    slack_username = UnicodeAttribute(null=False)
-    slack_team = UnicodeAttribute(null=False)
-    slack_url = UnicodeAttribute(null=False)
-    slack_avatar = UnicodeAttribute(null=False)
+    username = UnicodeAttribute(null=False)
+    teamname = UnicodeAttribute(null=False)
+    email = UnicodeAttribute(null=False)
+    url = UnicodeAttribute(null=False)
+    avatar = UnicodeAttribute(null=False)
 
 
 class MatchesModel(AbstractTimestampedModel):

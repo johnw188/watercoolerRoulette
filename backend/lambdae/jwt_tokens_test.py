@@ -24,7 +24,7 @@ def test_get_jwt_cookie():
 
     auth_cookie = cookies.SimpleCookie()
     auth_cookie.load(cookie)
-    value = auth_cookie[tokens.COOKIE_ATTR_NAME].value
+    value = auth_cookie[shared.COOKIE_ATTR_NAME].value
 
     decoded = tokens.jwt_decode(value)
     assert decoded["group_id"] == group_id

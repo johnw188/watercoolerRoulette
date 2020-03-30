@@ -10,7 +10,6 @@ import lambdae.shared as shared
 
 JWT_ALGO = "HS256"
 JWT_SECRET = shared.get_env_var("JWT_SECRET")
-COOKIE_ATTR_NAME = "token"
 
 # 1 day?
 TOKEN_EXPIRY = datetime.timedelta(days=1)
@@ -63,7 +62,7 @@ def get_jwt_cookie(user: models.UsersModel) -> str:
     encoded = issue_token(user)
     expiry = (datetime.datetime.utcnow() + TOKEN_EXPIRY).strftime("expires=%a, %d %b %Y %H:%M:%S GMT")
     # NB(meawoppl) The .watercooler.express must have the dot prefix to match the parent and all subdomains
-    cookie_parts = (COOKIE_ATTR_NAME + "=" + encoded, "Domain=.watercooler.express", expiry, "SameSite=None", "Secure")
+    cookie_parts = (shared.COOKIE_ATTR_NAME + "=" + encoded, "Domain=.watercooler.express", expiry, "SameSite=None", "Secure")
     return "; ".join(cookie_parts)
 
 
@@ -87,8 +86,8 @@ def require_authorization(event) -> models.UsersModel:
     try:
         auth_cookie = cookies.SimpleCookie()
         auth_cookie.load(raw_cookie)
-        cookie_value = auth_cookie[COOKIE_ATTR_NAME].value
-    except Exception as e:
+        cookie_value = auth_cookie[shared.COOKIE_ATTR_NAME].value
+    except (cookies.CookieError, KeyError) as e:
         raise shared.AuthException("Malformed cookie") from e
 
     # Already raises AuthException if failure

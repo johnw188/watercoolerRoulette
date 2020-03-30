@@ -4,6 +4,13 @@ import json
 import traceback
 
 
+COOKIE_ATTR_NAME = "token"
+
+
+def get_expired_cookie() -> str:
+    return COOKIE_ATTR_NAME + "=; expires=Thu, 01 Jan 1970 00:00:01 GMT;"
+
+
 def get_env_var(name: str) -> str:
     value = os.environ.get(name, None)
     assert value is not None, "Expected the environment variable \"{}\" to be set."
@@ -40,7 +47,10 @@ def json_request(f):
         try:
             response = f(*args, **kwargs)
         except AuthException:
-            response = {"statusCode": 401, "body": json.dumps({"ok": False, "message": "User is not logged in"})}
+            response = {
+                "statusCode": 401,
+                "headers": {"Set-Cookie": get_expired_cookie()},
+                "body": json.dumps({"ok": False, "message": "User is not logged in"})}
         except Exception as e:
             print("Unhandled Exception!!!")
             print(_fmt_exception(e))

@@ -34,10 +34,10 @@ def jwt_validate(token: str) -> dict:
     try:
         result = jwt_decode(token)
     except jwt.exceptions.PyJWTError as e:
-        raise AuthException(e)
+        raise shared.AuthException(e)
 
     if result["time"] < time.time() - TOKEN_EXPIRY.total_seconds():
-        raise AuthException("Token is expired")
+        raise shared.AuthException("Token is expired")
 
     return result
 
@@ -48,10 +48,6 @@ def jwt_encode(to_encode: dict) -> str:
 
 def jwt_decode(token: str) -> dict:
     return jwt.decode(token.encode(), JWT_SECRET, algorithms=[JWT_ALGO])
-
-
-class AuthException(Exception):
-    pass
 
 
 def issue_token(user: models.UsersModel) -> str:
@@ -87,7 +83,7 @@ def require_authorization(event) -> models.UsersModel:
     try:
         raw_cookie = event["headers"]["Cookie"]
     except KeyError:
-        raise AuthException("No cookie found in headers")
+        raise shared.AuthException("No cookie found in headers")
 
     print(raw_cookie)
     try:
@@ -95,7 +91,7 @@ def require_authorization(event) -> models.UsersModel:
         auth_cookie.load(raw_cookie)
         cookie_value = auth_cookie[COOKIE_ATTR_NAME].value
     except Exception as e:
-        raise AuthException("Malformed cookie") from e
+        raise shared.AuthException("Malformed cookie") from e
 
     # Already raises AuthException if failure
     validated = jwt_validate(cookie_value)
@@ -103,4 +99,4 @@ def require_authorization(event) -> models.UsersModel:
     try:
         return models.UsersModel.get(validated["group_id"], validated["user_id"])
     except pynamodb.exceptions.DoesNotExist:
-        raise AuthException("No such user.")
+        raise shared.AuthException("No such user.")

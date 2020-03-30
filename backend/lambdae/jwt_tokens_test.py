@@ -3,6 +3,7 @@ import time
 
 import pytest
 
+import lambdae.shared as shared
 import lambdae.models as models
 import lambdae.jwt_tokens as tokens
 
@@ -33,17 +34,18 @@ def test_get_jwt_cookie():
 def test_require_authorization():
     group_id, user_id = "fakegroup-cookie", "fakegroup-user"
     user = models.UsersModel(group_id, user_id)
-    user.slack_username = "usernameeeeee"
-    user.slack_avatar = "foo"
-    user.slack_team = "bar"
-    user.slack_url = "baz"
+    user.username = "usernameeeeee"
+    user.teamname = "bar"
+    user.avatar = "foo"
+    user.url = "baz"
+    user.email = "noone@nowhere.com"
     user.delete()
 
     cookie = tokens.get_jwt_cookie(user)
     fake_aws_events = {"headers": {"Cookie": cookie}}
 
     # User not saved yet, so should fail to get
-    with pytest.raises(tokens.AuthException):
+    with pytest.raises(shared.AuthException):
         tokens.require_authorization(fake_aws_events)
 
     user.save()
@@ -53,21 +55,21 @@ def test_require_authorization():
 def test_require_authorization_fail1():
     # Non-existant
     fake_aws_events = {"headers": {}}
-    with pytest.raises(tokens.AuthException):
+    with pytest.raises(shared.AuthException):
         tokens.require_authorization(fake_aws_events)
 
 
 def test_require_authorization_fail2():
     # Malformed
     fake_aws_events = {"headers": {"Cookie": "hella-malformed"}}
-    with pytest.raises(tokens.AuthException):
+    with pytest.raises(shared.AuthException):
         tokens.require_authorization(fake_aws_events)
 
 
 def test_require_authorization_fail3():
     # invalid
     fake_aws_events = {"headers": {"Cookie": "token=def_invalid"}}
-    with pytest.raises(tokens.AuthException):
+    with pytest.raises(shared.AuthException):
         tokens.require_authorization(fake_aws_events)
 
 
@@ -77,7 +79,7 @@ def test_require_authorization_expired():
 
     try:
         tokens.require_authorization(fake_aws_events)
-    except tokens.AuthException as e:
+    except shared.AuthException as e:
         assert "Token is expired" in str(e)
         return
 

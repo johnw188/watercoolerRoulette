@@ -14,6 +14,10 @@ def _fmt_exception(e: Exception) -> str:
     return str(e) + "\n" + traceback.format_exc()
 
 
+class AuthException(Exception):
+    pass
+
+
 def json_request(f):
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
@@ -22,6 +26,8 @@ def json_request(f):
 
         try:
             response = f(*args, **kwargs)
+        except AuthException as e:
+            response = {"statusCode": 401, "body": {"ok": False, "message": "User is not logged in"}}
         except Exception as e:
             response = {
                 "statusCode": 500,
@@ -32,9 +38,10 @@ def json_request(f):
                 })}
 
         headers = response.get("headers", {})
+        origin = headers.get("Origin", headers.get("origin", "*"))
         headers.update({
             # Look at this filthy hack
-            "Access-Control-Allow-Origin": event["headers"].get("Origin", event["headers"].get("origin", "*")),
+            "Access-Control-Allow-Origin": origin,
             "Access-Control-Allow-Credentials": True,
             "Content-Type": "application/json"
         })

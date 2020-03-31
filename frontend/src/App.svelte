@@ -15,13 +15,13 @@
 
 	rtc1.getOfferIce().then((offer)=>{
 		display = "OFFER"
-		console.log(offer)
 		rtc2.offerIceToAnswerIce(offer).then((answer)=>{
 			display = "ANSWER";
 			rtc1.setAnswerIce(answer).then(()=>{
-				display = "PRESEND";
-				rtc1.sendMessage("Foo");
-				rtc2.sendMessage("Bar");
+				display = "WAITING";
+				rtc2.getRemoteVideoStream().then((remoteStream)=>{
+					remoteVideo.srcObject = remoteStream;
+				})
 			});
 		})
 	});
@@ -31,9 +31,12 @@
 		rtc2.sendMessage("Bar");
 	};
 	
-	rtc1.beginLocalVideoStream().then((localStream) => {
-		localVideo.srcObject = localStream
+	rtc1.getLocalVideoStream().then((localStream) => {
+		localVideo.srcObject = localStream;
+		console.log("Local stream started")
 	})
+
+
 
 </script>
 

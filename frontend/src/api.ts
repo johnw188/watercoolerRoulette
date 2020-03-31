@@ -1,8 +1,7 @@
 export default class API {
     public static MATCH_URL = 'https://api.watercooler.express/match';
     public static ANSWER_URL = 'https://api.watercooler.express/answer';
-    public static USER_URL = 'https://api.watercooler.express/answer';
-
+    public static USER_URL = 'https://api.watercooler.express/user';
 
     constructor() {
 
@@ -12,7 +11,7 @@ export default class API {
         return new Promise((resolve, reject) => {
             const xhr = new XMLHttpRequest();
 
-            xhr.addEventListener("load", (e) => {
+            xhr.addEventListener("load", () => {
                 console.log('Loaded: ' + xhr.status);
                 console.log(xhr.response);
                 console.log();
@@ -21,7 +20,7 @@ export default class API {
                     resolve(xhr);
                 } else {
                     reject(xhr)
-                };
+                }
             });
 
             xhr.open(method, url);
@@ -61,7 +60,7 @@ export default class API {
 
     // Return a promise that completes on match
     public async match(offer: object): Promise<string> {
-        while(true){
+        for(;;){
             try{
                 return await this._match(offer);
             } catch(e) {

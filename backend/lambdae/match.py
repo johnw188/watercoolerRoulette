@@ -59,10 +59,13 @@ def match(event, context):
         return match_id_to_response(p_match.user_id, p_match.offer, True)
 
     # No luck matching to someone else, so put my record in the table, and wait on it
-    waiting_match = models.MatchesModel(user.group_id, user.user_id)
-    waiting_match.match_id = None
-    waiting_match.offer = None
-    waiting_match.answer = None
+    waiting_match = models.MatchesModel(
+        group_id=user.group_id,
+        user_id=user.user_id,
+        match_id=None,
+        offer=None,
+        answer=None
+    )
     logger.info(user.user_id + " adding self to the waiting table")
     waiting_match.save()
 

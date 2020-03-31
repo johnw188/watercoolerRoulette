@@ -14,7 +14,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 INTERVAL_MS = 50
-MAX_TIME_S = 5.0
+CLEANUP_TIME_MS = 2000
 
 
 def get_timeout_rec_ms():
@@ -28,7 +28,6 @@ def match_id_to_response(partner: str, offer: dict, offerer: bool) -> dict:
 @shared.json_request
 def match(event, context):
     user = tokens.require_authorization(event)
-    start_time = time.time()
 
     event_dict = json.loads(event["body"])
     offer = event_dict["offer"]
@@ -69,7 +68,7 @@ def match(event, context):
     logger.info(user.user_id + " adding self to the waiting table")
     waiting_match.save()
 
-    while time.time() - start_time < MAX_TIME_S:
+    while context.get_remaining_time_in_millis() > CLEANUP_TIME_MS:
         waiting_match.refresh(consistent_read=True)
         if waiting_match.match_id is not None:
             logger.info(user.user_id + " was proposed to by " + waiting_match.match_id)

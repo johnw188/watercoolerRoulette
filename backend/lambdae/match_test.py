@@ -16,6 +16,17 @@ logger = logging.getLogger("lambdae.match_test")
 logger.setLevel(logging.INFO)
 
 
+class FakeContext:
+    LAMBDA_TIME_MAX_S = 7
+
+    def __init__(self):
+        self._start_time = time.time()
+
+    def get_remaining_time_in_millis(self):
+        elapsed_seconds = time.time() - self._start_time
+        return (self.LAMBDA_TIME_MAX_S - elapsed_seconds) * 1000
+
+
 def make_json_event(*, body_json: dict, headers: dict) -> dict:
     return {"body": json.dumps(body_json), "headers": headers}
 
@@ -25,10 +36,12 @@ def test_match_timeout():
     result = lambdae.match.match(make_json_event(
         body_json={"offer": {"bar": "baz"}},
         headers={"Cookie": "token=" + tokens.issue_token(user)}
-    ), {})
-    print(json.loads(result["body"])["message"])
+    ), FakeContext())
+
+    body = json.loads(result["body"])
+    print(body["message"])
     assert result["statusCode"] == 408
-    assert json.loads(result["body"])["timeout_ms"] > 0
+    assert body["timeout_ms"] > 0
 
 
 def request_match(group_id, user_id):
@@ -40,7 +53,7 @@ def request_match(group_id, user_id):
         response = lambdae.match.match(make_json_event(
             body_json={"offer": {"bar": "baz"}},
             headers={"Cookie": "token=" + tokens.issue_token(user)}
-        ), {})
+        ), FakeContext())
 
         results = json.loads(response["body"])
 

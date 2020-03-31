@@ -1,3 +1,6 @@
+import { resolve } from "dns";
+import { rejects } from "assert";
+
 interface OfferIce{
     offer: RTCSessionDescriptionInit,
     ice: Array<RTCIceCandidate>
@@ -15,6 +18,7 @@ export default class RtcHelpers {
     private _dcRecv: RTCDataChannel;
     private _iceWaiter: Promise<Array<RTCIceCandidate>>;
     private _channelsSetup: Promise<void>;
+    private _streamWaiter: Promise<Array<MediaStream>>;
 
     constructor(identity: string) {
         this._identity = identity;
@@ -39,6 +43,7 @@ export default class RtcHelpers {
             };    
         });
 
+        // Text signaling data channel
         // Setup data channel and configs for when channel is established
         this._channelsSetup = new Promise((resolve, reject)=>{
             const dcConfig = {};
@@ -57,7 +62,13 @@ export default class RtcHelpers {
                 };
                 this._dcRecv.onclose = (event) => this.log("Close RECV:", event);
             }
-        }); 
+        });
+
+        this._streamWaiter = new Promise((resolve, reject)=>{
+            this._rtc.ontrack = (event) => resolve(event.streams.slice(0, event.streams.length));
+        })
+        
+
     }
 
     private log(...args: any[]) {
@@ -96,5 +107,27 @@ export default class RtcHelpers {
     public async sendMessage(message: string): Promise<void> {
         await this._channelsSetup;
         this._dcSend.send(message);
+    }
+
+    public async getRemoteVideoStream(): Promise<Array<MediaStream>> {
+        return await this._streamWaiter;
+    }
+
+    public async beginLocalVideoStream(): Promise<MediaStream> {
+        var mediaConstraints = {
+            audio: true,            // We want an audio track
+            video: {
+                aspectRatio: {
+                    ideal: 1.333333     // 3:2 aspect is preferred
+                }
+            }
+        };
+        let webcamStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
+        
+        webcamStream.getTracks().forEach((track) => {
+            this._rtc.addTransceiver(track, {streams: [webcamStream]})    
+        });
+        
+        return webcamStream;
     }
 }

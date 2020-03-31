@@ -79,7 +79,7 @@ export default class WebRTCConnection {
     }
 
     createOffer() {
-        this._offerDC = this._offerPeerConnection.createDataChannel('test', {reliable: true})
+        this._offerDC = this._offerPeerConnection.createDataChannel('test-wcr', {reliable: true})
         this._offerPeerConnection.createOffer().then((desc) => {
             this._offerPeerConnection.setLocalDescription(desc)
         })

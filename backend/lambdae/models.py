@@ -3,11 +3,12 @@ import os
 
 import lambdae.shared as shared
 
-from pynamodb.attributes import (UnicodeAttribute, UTCDateTimeAttribute)
+from pynamodb.attributes import (UnicodeAttribute, UTCDateTimeAttribute, ListAttribute)
 from pynamodb.models import Model
 
 USERS_TABLE = shared.get_env_var("USERS_TABLE")
 MATCHES_TABLE = shared.get_env_var("MATCHES_TABLE")
+CHANNELS_TABLE = shared.get_env_var("MATCHES_TABLE")
 
 # Set by serverless when running locally/testing
 IS_LOCAL = "IS_LOCAL" in os.environ
@@ -56,7 +57,31 @@ class MatchesModel(AbstractTimestampedModel):
 
     group_id = UnicodeAttribute(hash_key=True, null=False)
     user_id = UnicodeAttribute(range_key=True, null=False)
-
     match_id = UnicodeAttribute(null=True)
-    offer = UnicodeAttribute(null=True)
-    answer = UnicodeAttribute(null=True)
+    channel_id = UnicodeAttribute(null=True)
+
+
+class ChannelModel(AbstractTimestampedModel):
+    class Meta:
+        table_name = CHANNELS_TABLE
+
+        if IS_LOCAL:
+            host = "http://localhost:8000"
+        else:
+            region = "us-west-2"
+
+    channel_id = UnicodeAttribute(hash_key=True, null=False)
+    messages = ListAttribute()
+
+    def add_message(self, user_id: str, message: str):
+        append_action = ChannelModel.messages.list_append([user_id, message])
+        self.update(actions=[append_action])
+
+    def get_messages(self, user_id: str):
+        messages = []
+        for i in range(len(self.messages // 2)):
+            sender = self.messages[i*2]
+            msg = self.messages[i*2 + 1]
+            if sender != user_id:
+                messages.append(msg)
+        return messages

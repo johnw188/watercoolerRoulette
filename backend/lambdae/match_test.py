@@ -27,16 +27,16 @@ class FakeContext:
         return (self.LAMBDA_TIME_MAX_S - elapsed_seconds) * 1000
 
 
-def make_json_event(*, body_json: dict, headers: dict) -> dict:
-    return {"body": json.dumps(body_json), "headers": headers}
+def make_json_event(*, headers: dict) -> dict:
+    return {"body": "", "headers": headers}
 
 
 def test_match_timeout():
     user = models_testlib.create_fake_user("fakegroup-1")
-    result = lambdae.match.match(make_json_event(
-        body_json={"offer": {"bar": "baz"}},
-        headers={"Cookie": "token=" + tokens.issue_token(user)}
-    ), FakeContext())
+    result = lambdae.match.match(
+        {"headers": {"Cookie": tokens.get_jwt_cookie(user)}},
+        FakeContext()
+    )
 
     body = json.loads(result["body"])
     print(body["message"])
@@ -50,21 +50,23 @@ def request_match(group_id, user_id):
 
     start_time = time.time()
     for x in range(20):
-        response = lambdae.match.match(make_json_event(
-            body_json={"offer": {"bar": "baz"}},
-            headers={"Cookie": "token=" + tokens.issue_token(user)}
-        ), FakeContext())
+        response = lambdae.match.match(
+            {"headers": {"Cookie": tokens.get_jwt_cookie(user)}},
+            FakeContext()
+        )
 
         results = json.loads(response["body"])
 
         if response["statusCode"] == 500:
             logger.error(results)
+            print(response["message"])
+            raise RuntimeError()
 
         if(results["ok"]):
             return (user.user_id, dict(
                 time=time.time() - start_time,
-                partner=results["partner"],
-                offer=results["offer"],
+                partner=results["match_id"],
+                offer=results["channel_id"],
                 cycles=x + 1))
         else:
             logger.warning(results["message"])

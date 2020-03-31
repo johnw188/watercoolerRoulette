@@ -2,6 +2,7 @@ import datetime
 import json
 import time
 import random
+import uuid
 
 import lambdae.models as models
 import lambdae.shared as shared
@@ -21,17 +22,15 @@ def get_timeout_rec_ms():
     return int(random.uniform(50, 500))
 
 
-def match_id_to_response(partner: str, offer: dict, offerer: bool) -> dict:
-    return shared.json_success_response({"partner": partner, "offer": offer, "offerer": offerer})
+def match_id_to_response(other_id: str, channel_id: str, offerer: bool) -> dict:
+    if(offerer):
+        models.ChannelModel(channel_id=channel_id, messages=[]).save()
+    return shared.json_success_response({"channel_id": channel_id, "other_id": other_id, "offerer": offerer})
 
 
 @shared.json_request
 def match(event, context):
     user = tokens.require_authorization(event)
-
-    event_dict = json.loads(event["body"])
-    offer = event_dict["offer"]
-
     # The user should not have a match record. Delete it, and log if that was successful
     try:
         models.MatchesModel(user.group_id, user.user_id).delete()
@@ -39,14 +38,14 @@ def match(event, context):
     except pynamodb.exceptions.DeleteError:
         pass
 
-    HAS_NO_MATCH = models.MatchesModel.match_id.does_not_exist()
-
     # Get the unmatched people in my group
+    HAS_NO_MATCH = models.MatchesModel.match_id.does_not_exist()
     potential_matches = list(models.MatchesModel.query(user.group_id, filter_condition=HAS_NO_MATCH))
     random.shuffle(potential_matches)
 
     logger.info(user.user_id + " Searching through potential matches")
-    actions = [models.MatchesModel.match_id.set(user.user_id), models.MatchesModel.offer.set(json.dumps(offer))]
+    channel_id = str(uuid.uuid4())
+    actions = [models.MatchesModel.match_id.set(user.user_id), models.MatchesModel.channel_id.set(channel_id)]
     for p_match in potential_matches:
         try:
             logger.info(user.user_id + " proposing match with " + p_match.user_id)
@@ -55,15 +54,14 @@ def match(event, context):
             logger.info(user.user_id + " user already matched :(")
             continue
         logger.info(user.user_id + " successful match with " + p_match.user_id)
-        return match_id_to_response(p_match.user_id, p_match.offer, True)
+        return match_id_to_response(p_match.user_id, p_match.channel_id, True)
 
     # No luck matching to someone else, so put my record in the table, and wait on it
     waiting_match = models.MatchesModel(
         group_id=user.group_id,
         user_id=user.user_id,
         match_id=None,
-        offer=None,
-        answer=None
+        channel_id=None
     )
     logger.info(user.user_id + " adding self to the waiting table")
     waiting_match.save()
@@ -72,7 +70,7 @@ def match(event, context):
         waiting_match.refresh(consistent_read=True)
         if waiting_match.match_id is not None:
             logger.info(user.user_id + " was proposed to by " + waiting_match.match_id)
-            return match_id_to_response(waiting_match.match_id, waiting_match.offer, False)
+            return match_id_to_response(waiting_match.match_id, waiting_match.channel_id, False)
         time.sleep(INTERVAL_MS / 1000)
 
     # Try to delete the match record, but only if unmatched
@@ -81,7 +79,7 @@ def match(event, context):
     except pynamodb.exceptions.DeleteError:
         waiting_match.refresh()
         logger.info(user.user_id + " matched at last call with " + waiting_match.match_id)
-        return match_id_to_response(waiting_match.match_id, waiting_match.offer, False)
+        return match_id_to_response(waiting_match.match_id, False)
 
     logger.info("Exiting -> Timeout")
     timeout_ms = get_timeout_rec_ms()
@@ -90,25 +88,6 @@ def match(event, context):
         code=408,
         j={"timeout_ms": timeout_ms}
     )
-
-
-@shared.json_request
-def post_answer(event, context):
-    user = tokens.require_authorization(event)
-
-    matches_match_id = models.MatchesModel.match_id == user.user_id
-    match = next(models.MatchesModel.query(user.group_id, filter_condition=matches_match_id))
-    event_dict = json.loads(event["body"])
-
-    match.update(actions=[models.MatchesModel.answer.set(json.dumps(event_dict["answer"]))])
-    return shared.json_success_response({})
-
-
-@shared.json_request
-def get_answer(event, context):
-    user = tokens.require_authorization(event)
-    match = models.MatchesModel.get(user.group_id, user.user_id)
-    return shared.json_success_response({"answer": json.loads(match.answer)})
 
 
 def cleanup(event, context):

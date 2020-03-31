@@ -31,7 +31,7 @@ export default class API {
         });
     }
 
-    private async _match(offer: object): Promise<string> {
+    private async _match(offer: RTCSessionDescriptionInit): Promise<string> {
         return new Promise((resolve, reject)=>{
             var xhr_promise: Promise<XMLHttpRequest> = this._xhr_promise("POST", API.MATCH_URL, {offer: offer});
 
@@ -60,7 +60,7 @@ export default class API {
     }
 
     // Return a promise that completes on match
-    public async match(offer: object): Promise<string> {
+    public async match(offer: RTCSessionDescriptionInit): Promise<string> {
         while(true){
             var wait_ms : number = 0;
             try{

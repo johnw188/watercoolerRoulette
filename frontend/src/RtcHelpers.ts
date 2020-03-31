@@ -76,6 +76,8 @@ export default class RtcHelpers {
         await Promise.all(candidates.map((ic)=>{
             this._rtc.addIceCandidate(ic).catch(this.log);
         }));
+
+        return;
     }
 
     public async offerIceToAnswerIce(offerIce: OfferIce): Promise<AnswerIce> {

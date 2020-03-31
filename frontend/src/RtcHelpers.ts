@@ -67,19 +67,20 @@ export default class RtcHelpers {
 
     public async getOfferIce(): Promise<OfferIce> {      
         let offer = await this._rtc.createOffer()
-        console.log("Created offer");
         await this._rtc.setLocalDescription(offer);
-        console.log("Set Local Desc");
         let ice = await this._iceWaiter;
-        console.log("ICE Done");
         return {offer, ice};
+    }
+
+    private async addAllIceCandidates(candidates: Array<RTCIceCandidate>): Promise<void> {
+        await Promise.all(candidates.map((ic)=>{
+            this._rtc.addIceCandidate(ic).catch(this.log);
+        }));
     }
 
     public async offerIceToAnswerIce(offerIce: OfferIce): Promise<AnswerIce> {
         await this._rtc.setRemoteDescription(offerIce.offer);
-        await Promise.all(offerIce.ice.map((ic)=>{
-            this._rtc.addIceCandidate(ic).catch(this.log);
-        }));
+        await this.addAllIceCandidates(offerIce.ice);
 
         let answer = await this._rtc.createAnswer();
         await this._rtc.setLocalDescription(answer);
@@ -89,9 +90,7 @@ export default class RtcHelpers {
 
     public async setAnswerIce(answerIce: AnswerIce): Promise<void> {
         await this._rtc.setRemoteDescription(answerIce.answer);
-        await Promise.all(answerIce.ice.map((ic)=>{
-            this._rtc.addIceCandidate(ic).catch(this.log);
-        }));
+        await this.addAllIceCandidates(answerIce.ice);
     }
 
     public async sendMessage(message: string): Promise<void> {

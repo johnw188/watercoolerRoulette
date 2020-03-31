@@ -33,8 +33,11 @@ def test_auth_basic():
 
 
 def test_error_param():
+    def not_callable(code: str):
+        raise AssertionError("Unreachable")
+
     result = auth.slack_oauth({
         "queryStringParameters": {"error": "Anything"}
-    }, {}, slack_oauth_call=fake_slack_oauth)
+    }, {}, slack_oauth_call=not_callable)
 
     assert result["statusCode"] == 403

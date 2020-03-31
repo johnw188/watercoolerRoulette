@@ -36,7 +36,6 @@ package:
     - node_modules/**
     - requirements/botocore*/**
 
-
 functions:
   match:
     handler: lambdae/match.match
@@ -78,7 +77,7 @@ functions:
           method: get
           cors: true
 
-  get_answer:
+  answer_get:
     handler: lambdae/match.get_answer
     events:
       - http:
@@ -86,7 +85,7 @@ functions:
           method: get
           cors: true # <-- CORS!
 
-  post_answer:
+  answer_post:
     handler: lambdae/match.post_answer
     events:
       - http:

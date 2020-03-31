@@ -33,7 +33,7 @@
 	};
 	
 	rtc1.beginLocalVideoStream().then((localStream) => {
-		localVideo.stream = localStream
+		localVideo.srcObject = localStream
 	})
 
 </script>

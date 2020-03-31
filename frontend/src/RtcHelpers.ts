@@ -15,8 +15,6 @@ export default class RtcHelpers {
     private _dcRecv: RTCDataChannel;
     private _iceWaiter: Promise<Array<RTCIceCandidate>>;
     private _channelsSetup: Promise<void>;
-    private _localIce: Array<RTCIceCandidate>;
-
 
     constructor(identity: string) {
         this._identity = identity;
@@ -39,32 +37,32 @@ export default class RtcHelpers {
                     resolve(_localIce);
                 }
             };    
-        })
+        });
 
         // Setup data channel and configs for when channel is established
         this._channelsSetup = new Promise((resolve, reject)=>{
             const dcConfig = {};
             this._dcSend = this._rtc.createDataChannel('test-wcr', dcConfig);
-            this._dcSend.onmessage = (event)=>this.log(" Message SEND:" + event);
-            this._dcSend.onopen = (event)=>this.log(" Open SEND:" + event);
-            this._dcSend.onclose = (event) => this.log(" Close SEND:" + event);
+            this._dcSend.onmessage = (event)=>this.log(" Message SEND:", event);
+            this._dcSend.onopen = (event)=>this.log(" Open SEND:", event);
+            this._dcSend.onclose = (event) => this.log("Close SEND:", event);
     
             this._rtc.ondatachannel = (event) => {
                 console.log("ODC");
                 this._dcRecv = event.channel;
-                this._dcRecv.onmessage = (event)=> this.log(" Message RECV " + event)
+                this._dcRecv.onmessage = (event)=> this.log("Message RECV", event)
                 this._dcRecv.onopen = (event)=>{
                     this.log(" Open RECV:" + event);
                     resolve();
                 };
-                this._dcRecv.onclose = (event) => this.log(" Close RECV:" + event);
+                this._dcRecv.onclose = (event) => this.log("Close RECV:", event);
             }
         }); 
     }
 
-    private log(thing: any) {
+    private log(...args: any[]) {
         console.log("Identity:" + this._identity)
-        console.log(thing);
+        args.map(console.log);
     }
 
     public async getOfferIce(): Promise<OfferIce> {      

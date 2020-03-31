@@ -26,25 +26,8 @@
 
 
 	function handleClick(event) {
-        // console.log("Clicked!")
-    	// rtc.getOffer().then((offer)=>{
-		// 	api.match(offer).then((match)=>{
-		// 		if(match.offerer){
-		// 			api.get_answer().then((answer)=>{
-		// 				console.log("Got answer!!!")
-		// 				rtc.setAnswer(answer);
-		// 			});
-		// 		} else {
-		// 			console.log("Pushing answer")
-		// 			rtc.get_answer().then((answer)=>{
-		// 				api.post_answer(answer);
-		// 			});
-		// 		}
-		// 		display = "Got match";
-		// 		console.log(match);
-		// 	});
-		// 	display = "Got offer";
-		// });    
+		rtc1.sendMessage("Foo");
+		rtc2.sendMessage("Bar");
     };
 
 </script>

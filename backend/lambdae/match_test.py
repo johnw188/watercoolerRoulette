@@ -32,7 +32,7 @@ def make_json_event(*, body_json: dict, headers: dict) -> dict:
 
 
 def test_match_timeout():
-    user = models_testlib.create_fake_users("fakegroup-1", 1)[0]
+    user = models_testlib.create_fake_user("fakegroup-1")
     result = lambdae.match.match(make_json_event(
         body_json={"offer": {"bar": "baz"}},
         headers={"Cookie": "token=" + tokens.issue_token(user)}
@@ -46,7 +46,7 @@ def test_match_timeout():
 
 def request_match(group_id, user_id):
     # Forge myself a JWT token
-    user = models_testlib.create_fake_users(group_id, 1)[0]
+    user = models_testlib.create_fake_user(group_id)
 
     start_time = time.time()
     for x in range(20):

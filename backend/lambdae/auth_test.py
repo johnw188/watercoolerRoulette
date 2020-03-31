@@ -19,10 +19,11 @@ def fake_slack_oauth(code: str):
 
 
 def test_auth_basic():
-    """This makes sure the module inits at the very least..."""
-    result = auth.slack_oauth({
-        "queryStringParameters": {"code": TEST_CODE}
-    }, {}, slack_oauth_call=fake_slack_oauth)
+    result = auth.slack_oauth(
+        {"queryStringParameters": {"code": TEST_CODE}},
+        {},
+        slack_oauth_call=fake_slack_oauth) # Mocks out the actual oauth work
+
     assert result["statusCode"] == 302
     headers = result["headers"]
     assert headers["Location"] == auth.AFTER_AUTH_REDIRECT
@@ -33,6 +34,8 @@ def test_auth_basic():
 
 
 def test_error_param():
+    # If the oauth gets a query param of error, it indicates
+    # the slack oauth failed for some reason, and we should 403
     def not_callable(code: str):
         raise AssertionError("Unreachable")
 

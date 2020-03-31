@@ -5,6 +5,7 @@ import pytest
 
 import lambdae.shared as shared
 import lambdae.models as models
+import lambdae.models_testlib as models_testlib
 import lambdae.jwt_tokens as tokens
 
 
@@ -17,8 +18,8 @@ def test_jwt_encoding():
 
 
 def test_get_jwt_cookie():
-    group_id, user_id = "fakegroup-cookie", "fakegroup-user"
-    user = models.UsersModel(group_id, user_id)
+    group_id = "foobarbaz"
+    user = models_testlib.create_fake_user(group_id)
     cookie = tokens.get_jwt_cookie(user)
     assert cookie.startswith("token="), cookie
 
@@ -27,18 +28,13 @@ def test_get_jwt_cookie():
     value = auth_cookie[shared.COOKIE_ATTR_NAME].value
 
     decoded = tokens.jwt_decode(value)
-    assert decoded["group_id"] == group_id
-    assert decoded["user_id"] == user_id
+    assert decoded["group_id"] == user.group_id
+    assert decoded["user_id"] == user.user_id
 
 
 def test_require_authorization():
-    group_id, user_id = "fakegroup-cookie", "fakegroup-user"
-    user = models.UsersModel(group_id, user_id)
-    user.username = "usernameeeeee"
-    user.teamname = "bar"
-    user.avatar = "foo"
-    user.url = "baz"
-    user.email = "noone@nowhere.com"
+    group_id = "foobarbaz"
+    user = models_testlib.create_fake_user(group_id)
     user.delete()
 
     cookie = tokens.get_jwt_cookie(user)
@@ -74,6 +70,7 @@ def test_require_authorization_fail3():
 
 
 def test_require_authorization_expired():
+    # temporal expiration
     token = tokens.jwt_issue(group_id="group", user_id="user", t=time.time() - tokens.TOKEN_EXPIRY.total_seconds() - 1)
     fake_aws_events = {"headers": {"Cookie": "token=" + token}}
 

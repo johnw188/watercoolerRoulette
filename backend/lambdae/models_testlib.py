@@ -27,3 +27,7 @@ def create_fake_users(group_id: str, number: int,  seed=None, prefix="fake_user_
         user.save()
         users.append(user)
     return tuple(users)
+
+
+def create_fake_user(group_id: str):
+    return create_fake_users(group_id, 1)[0]

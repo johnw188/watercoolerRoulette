@@ -40,10 +40,18 @@ def jwt_validate(token: str) -> dict:
 
 
 def jwt_encode(to_encode: dict) -> str:
+    """
+    Encode a jwt token using our token and algo. Return a string
+    """
     return jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGO).decode()
 
 
 def jwt_decode(token: str) -> dict:
+    """
+    Decode a jwt token using our token and algo. Return the encoded object
+
+    This does not perform any validation/structural checks
+    """
     return jwt.decode(token.encode(), JWT_SECRET, algorithms=[JWT_ALGO])
 
 

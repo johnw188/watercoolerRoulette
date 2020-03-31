@@ -11,11 +11,12 @@
 
 	let display = "testing testing"
 
-	rtc1.getOffer().then((offer)=>{
+	rtc1.getOfferIce().then((offer)=>{
 		display = "OFFER"
-		rtc2.offerToAnswer(offer).then((answer)=>{
+		console.log(offer)
+		rtc2.offerIceToAnswerIce(offer).then((answer)=>{
 			display = "ANSWER";
-			rtc1.setAnswer(answer).then(()=>{
+			rtc1.setAnswerIce(answer).then(()=>{
 				display = "PRESEND";
 				rtc1.sendMessage("Foo");
 				rtc2.sendMessage("Bar");

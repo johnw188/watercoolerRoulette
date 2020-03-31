@@ -62,14 +62,14 @@ export default class API {
     // Return a promise that completes on match
     public async match(offer: object): Promise<string> {
         while(true){
-            var wait_ms : number = 0;
             try{
-                await this.wait(wait_ms);
                 return await this._match(offer);
             } catch(e) {
                 if(e.timeout_ms){
-                    wait_ms = e.timeout_ms;
-                    console.log("Wait timeout updated to " + wait_ms.toString());
+                    await this.wait(e.timeout_ms);
+                    console.log("Waiting " + e.timeout_ms + "ms");
+                } else {
+                    throw(e);
                 }
             }
         }

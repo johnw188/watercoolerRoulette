@@ -26,7 +26,6 @@
 		})
 	});
 
-
 	function handleClick(event) {
 		rtc1.sendMessage("Foo");
 		rtc2.sendMessage("Bar");

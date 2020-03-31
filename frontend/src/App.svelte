@@ -3,20 +3,33 @@
 	import SelfVideo from './SelfVideo.svelte';
 	import WebRTCConnection from './webrtcConnect.js'
 	import API from './api.ts'
+	import RtcHelpers from './RtcHelpers.ts'
 
 	let api = new API();
+	let rtc1 = new RtcHelpers("RTC1");
+	let rtc2 = new RtcHelpers("RTC2");
 
-	let connection = new WebRTCConnection()
-	let offer = "testing testing"
-	connection.createOffer()
-	connection.offerListener = (newOffer) => {
-		offer = JSON.stringify(newOffer)
-	}
+	let display = "testing testing"
+
+	rtc1.getOfferIce().then((offer)=>{
+		display = "OFFER"
+		console.log(offer)
+		rtc2.offerIceToAnswerIce(offer).then((answer)=>{
+			display = "ANSWER";
+			rtc1.setAnswerIce(answer).then(()=>{
+				display = "PRESEND";
+				rtc1.sendMessage("Foo");
+				rtc2.sendMessage("Bar");
+			});
+		})
+	});
+
 
 	function handleClick(event) {
-		console.log("Clicked!")
-		api.match({});
-	}
+		rtc1.sendMessage("Foo");
+		rtc2.sendMessage("Bar");
+    };
+
 </script>
 
 <div class="mainContainer">
@@ -27,7 +40,7 @@
 	<SignIn on:click={handleClick}/>
 	<video id="localVideo" autoplay muted></video>
 	<video id="remoteVideo" autoplay></video>
-	<p>{offer}</p>
+	<p>{display}</p>
 </main>
 </div>
 

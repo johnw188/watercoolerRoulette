@@ -5,7 +5,9 @@
 	import API from './api.ts'
 	import RtcHelpers from './RtcHelpers.ts'
 
-	let api = new API();
+	let localVideo;
+	let remoteVideo;
+
 	let rtc1 = new RtcHelpers("RTC1");
 	let rtc2 = new RtcHelpers("RTC2");
 
@@ -28,7 +30,11 @@
 	function handleClick(event) {
 		rtc1.sendMessage("Foo");
 		rtc2.sendMessage("Bar");
-    };
+	};
+	
+	rtc1.beginLocalVideoStream().then((localStream) => {
+		localVideo.stream = localStream
+	})
 
 </script>
 
@@ -38,8 +44,8 @@
 <main>
 	<h1>Watercooler Roulette</h1>
 	<SignIn on:click={handleClick}/>
-	<video id="localVideo" autoplay muted></video>
-	<video id="remoteVideo" autoplay></video>
+	<video bind:this={localVideo} id="localVideo" autoplay muted></video>
+	<video bind:this={remoteVideo} id="remoteVideo" autoplay></video>
 	<p>{display}</p>
 </main>
 </div>

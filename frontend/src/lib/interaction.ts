@@ -1,30 +1,42 @@
 import API from './api';
 import RtcHelpers from './RtcHelpers';
 
+interface StreamPair{
+  local: MediaStream;
+  remote: MediaStream;
+}
+
 export default class ChatInteraction {
-    private _api: API;
-    private _rtcHelpers: RtcHelpers;
+    private rtcHelpers: RtcHelpers;
 
     constructor() {
-        this._api = new API();
-        this._rtcHelpers = new RtcHelpers("myidentity");
+      this.rtcHelpers = new RtcHelpers('myidentity');
     }
 
+    public async getStreams(stateCB?: (stage: string) => void): Promise<StreamPair> {
+      stateCB = stateCB || console.log;
 
-    public async doTheWork(): Promise<Array<MediaStream>> {
-        let offerIce = await this._rtcHelpers.getOfferIce()
-        let match = await this._api.match(offerIce);
-        if(match.offerer) {
-            let answerIce = await this._api.get_answer();
-            await this._rtcHelpers.setAnswerIce(answerIce);
-        } else {
-            let answerIce = await this._rtcHelpers.offerIceToAnswerIce(match.offer);
-            await this._api.post_answer(answerIce);
-        }
+      const offerIce = await this.rtcHelpers.getOfferIce();
+      stateCB('Created Offer');
+      const match = await API.match(offerIce);
+      stateCB('Got matched');
+      if (match.offerer) {
+        stateCB('Match is using my offer, waiting for their answer');
+        const answerIce = await API.getAnswerIce();
+        stateCB('Answer received.');
+        await this.rtcHelpers.setAnswerIce(answerIce);
+        stateCB('Setup complete, waiting on remote stream to start');
+      } else {
+        stateCB('Using their offer, crafting my answer');
+        const answerIce = await this.rtcHelpers.offerIceToAnswerIce(match.offer);
+        stateCB('Posting answer');
+        await API.postAnswerIce(answerIce);
+        stateCB('Answer posted waiting on remote stream to start');
+      }
 
-        let localStream = await this._rtcHelpers.getLocalVideoStream();
-        let remoteStream = await this._rtcHelpers.getRemoteVideoStream();
+      const local = await this.rtcHelpers.getLocalVideoStream();
+      const remote = await this.rtcHelpers.getRemoteVideoStream();
 
-        return [localStream, remoteStream];
+      return { local, remote };
     }
 }

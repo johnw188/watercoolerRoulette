@@ -9,9 +9,8 @@
       <video bind:this={remoteVideo} id="remoteVideo" ref="remoteVideo" autoplay></video>
       <p>{{displayState}}</p>
 
-    <button v-on:click="runRTCTest">RTC TEST</button>
-    <button v-on:click="runMatchTest">MATCH TEST</button>
-
+      <button v-on:click="runRTCTest">RTC TEST</button>
+      <button v-on:click="runMatchTest">MATCH TEST</button>
     </div>
   </div>
 </template>

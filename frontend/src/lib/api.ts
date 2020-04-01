@@ -1,24 +1,13 @@
 import { AnswerIce, OfferIce } from './interfaces';
 
+import TimeoutException from './TimeoutException';
+
 interface MatchResult {
     partner: string;
     offer: OfferIce;
     offerer: boolean;
 }
 
-class TimeoutException extends Error {
-  private timeoutMS: number;
-
-  constructor(m: string, timeoutMS: number) {
-    super(m);
-    Object.setPrototypeOf(this, TimeoutException.prototype);
-    this.timeoutMS = timeoutMS;
-  }
-
-  public getTimeoutMS(): number {
-    return this.timeoutMS;
-  }
-}
 
 export default class API {
     public static MATCH_URL = 'https://api.watercooler.express/match';

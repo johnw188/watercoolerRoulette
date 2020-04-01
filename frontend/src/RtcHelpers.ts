@@ -1,12 +1,4 @@
-interface OfferIce{
-    offer: RTCSessionDescriptionInit,
-    ice: Array<RTCIceCandidate>
-}
-
-interface AnswerIce {
-    answer: RTCSessionDescriptionInit,
-    ice: Array<RTCIceCandidate>
-}
+import {AnswerIce, OfferIce} from "./interfaces"
 
 export default class RtcHelpers {
     private _identity: string

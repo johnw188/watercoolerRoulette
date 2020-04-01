@@ -1,3 +1,12 @@
+import {AnswerIce, OfferIce} from "./interfaces"
+
+interface MatchResult {
+    partner: string,
+    offer: OfferIce,
+    offerer: boolean
+}
+
+
 export default class API {
     public static MATCH_URL = 'https://api.watercooler.express/match';
     public static ANSWER_URL = 'https://api.watercooler.express/answer';
@@ -28,11 +37,11 @@ export default class API {
       });
     }
 
-    private async _match(offer: object): Promise<string> {
+    private async _match(offer: object): Promise<MatchResult> {
       return new Promise((resolve, reject)=>{
         const xhr_promise: Promise<XMLHttpRequest> = this._xhr_promise('POST', API.MATCH_URL, {offer: offer});
 
-        xhr_promise.then((xhr)=>resolve(xhr.response.match_id));
+        xhr_promise.then((xhr)=>resolve(xhr.response));
         xhr_promise.catch((xhr)=>{
           if (xhr.status == 408) {
             console.log('Timeout during matching');
@@ -57,7 +66,7 @@ export default class API {
     }
 
     // Return a promise that completes on match
-    public async match(offer: object): Promise<string> {
+    public async match(offer: object): Promise<MatchResult> {
       while(true) {
         try {
           return await this._match(offer);
@@ -76,7 +85,7 @@ export default class API {
       this._xhr_promise('POST', API.ANSWER_URL, {answer: answer});
     }
 
-    public async get_answer(): Promise<object> {
+    public async get_answer(): Promise<AnswerIce> {
       return new Promise((resolve, reject)=>{
         this._xhr_promise('GET', API.ANSWER_URL, null).then(
             (xhr: XMLHttpRequest)=>resolve(xhr.response.answer),

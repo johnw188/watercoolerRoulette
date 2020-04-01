@@ -91,11 +91,17 @@ export default class API {
     }
 
     public static async userInfo(user?: string): Promise<object> {
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
         let url = API.USER_URL;
         url = user ? `${url}/${user}` : url;
         API.xhrPromise('GET', url).then(
-          (xhr: XMLHttpRequest) => resolve(xhr.response),
+          (xhr: XMLHttpRequest) => {
+            if (xhr.status === 200) {
+              resolve(xhr.response);
+            } else {
+              reject();
+            }
+          },
         );
       });
     }

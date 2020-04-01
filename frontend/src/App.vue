@@ -8,7 +8,10 @@
       <video bind:this={localVideo} id="localVideo" ref="localVideo" autoplay muted></video>
       <video bind:this={remoteVideo} id="remoteVideo" ref="remoteVideo" autoplay></video>
       <p>{{displayState}}</p>
-    <button v-on:click="runRTCTest">Reverse Message</button>
+
+    <button v-on:click="runRTCTest">RTC TEST</button>
+    <button v-on:click="runMatchTest">MATCH TEST</button>
+
     </div>
   </div>
 </template>
@@ -21,6 +24,7 @@ import cookies from 'js-cookie';
 
 import API from './lib/api';
 import RtcHelpers from './lib/RtcHelpers';
+import ChatInteraction from './lib/interaction';
 
 @Component({
   components: {},
@@ -58,27 +62,16 @@ export default class App extends Vue {
   }
 
   public runRTCTest() {
-    const rtc1 = new RtcHelpers('RTC1');
-    const rtc2 = new RtcHelpers('RTC2');
-
-    rtc1.getOfferIce().then((offer) => {
-      this.displayState = 'OFFER';
-      rtc2.offerIceToAnswerIce(offer).then((answer) => {
-        this.displayState = 'ANSWER';
-        rtc1.setAnswerIce(answer).then(() => {
-          this.displayState = 'WAITING';
-          rtc2.getRemoteVideoStream().then((remoteStream) => {
-            this.displayState = 'got video';
-            this.$refs.remoteVideo.srcObject = remoteStream;
-          });
-        });
-      });
+    ChatInteraction.runRTCTest().then((pair) => {
+      this.$refs.localVideo.srcObject = pair.local;
+      this.$refs.remoteVideo.srcObject = pair.remote;
     });
+  }
 
-    rtc1.getLocalVideoStream().then((localStream) => {
-      // localVideo.srcObject = localStream;
-      console.log('Local stream started');
-      this.$refs.localVideo.srcObject = localStream;
+  public runMatchTest() {
+    new ChatInteraction('NoOne').getStreams().then((pair) => {
+      this.$refs.localVideo.srcObject = pair.local;
+      this.$refs.remoteVideo.srcObject = pair.remote;
     });
   }
 }

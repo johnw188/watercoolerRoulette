@@ -29,7 +29,7 @@ export default class RtcHelpers {
       this.pc = new RTCPeerConnection(configuration);
 
       // This promise resolved after ICE candidate transmission is done
-      this.iceWaiter = new Promise((resolve, reject) => {
+      this.iceWaiter = new Promise((resolve) => {
         const iceOptions = new Array<RTCIceCandidate>();
         this.pc.onicecandidate = (e) => {
           if (e.candidate !== null) {
@@ -42,7 +42,7 @@ export default class RtcHelpers {
 
       // Text signaling data channel
       // Setup data channel and configs for when channel is established
-      this.channelsSetup = new Promise((resolve, reject) => {
+      this.channelsSetup = new Promise((resolve) => {
         const dcConfig = {};
         this.dcSend = this.pc.createDataChannel('test-wcr', dcConfig);
         this.dcSend.onmessage = (e) => this.log('Message SEND:', e);
@@ -61,7 +61,7 @@ export default class RtcHelpers {
       });
 
       // This promise comes live after receiving a remote stream
-      this.remoteStreamWaiter = new Promise((resolve, reject) => {
+      this.remoteStreamWaiter = new Promise((resolve) => {
         this.pc.ontrack = (event) => resolve(event.streams.slice(0, event.streams.length));
       });
 

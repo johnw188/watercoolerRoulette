@@ -9,33 +9,57 @@ interface StreamPair{
 export default class ChatInteraction {
     private rtcHelpers: RtcHelpers;
 
-    constructor() {
-      this.rtcHelpers = new RtcHelpers('myidentity');
+    constructor(ident: string) {
+      this.rtcHelpers = new RtcHelpers(ident);
     }
 
-    public async getStreams(stateCB?: (stage: string) => void): Promise<StreamPair> {
-      stateCB = stateCB || console.log;
+    public async getStreams(updateCB?: (stage: string) => void): Promise<StreamPair> {
+      const update = updateCB || console.log;
 
       const offerIce = await this.rtcHelpers.getOfferIce();
-      stateCB('Created Offer');
+      update('Created Offer');
       const match = await API.match(offerIce);
-      stateCB('Got matched');
+      update('Got matched');
       if (match.offerer) {
-        stateCB('Match is using my offer, waiting for their answer');
+        update('Match is using my offer, waiting for their answer');
         const answerIce = await API.getAnswerIce();
-        stateCB('Answer received.');
+        update('Answer received.');
         await this.rtcHelpers.setAnswerIce(answerIce);
-        stateCB('Setup complete, waiting on remote stream to start');
+        update('Setup complete, waiting on remote stream to start');
       } else {
-        stateCB('Using their offer, crafting my answer');
+        update('Using their offer, crafting my answer');
         const answerIce = await this.rtcHelpers.offerIceToAnswerIce(match.offer);
-        stateCB('Posting answer');
+        update('Posting answer');
         await API.postAnswerIce(answerIce);
-        stateCB('Answer posted waiting on remote stream to start');
+        update('Answer posted waiting on remote stream to start');
       }
 
       const local = await this.rtcHelpers.getLocalVideoStream();
       const remote = await this.rtcHelpers.getRemoteVideoStream();
+
+      return { local, remote };
+    }
+
+    public static async runRTCTest(
+      statusCB?: (status: string) => void,
+    ): Promise<StreamPair> {
+      const update = statusCB || console.log;
+      const rtc1 = new RtcHelpers('RTC1');
+      const rtc2 = new RtcHelpers('RTC2');
+
+      const offer = await rtc1.getOfferIce();
+      update('OFFER');
+
+      const answer = await rtc2.offerIceToAnswerIce(offer);
+      update('ANSWER');
+
+      await rtc1.setAnswerIce(answer);
+      update('WAITING');
+
+      const remote = await rtc2.getRemoteVideoStream();
+      update('VIDEO!');
+
+      const local = await rtc1.getLocalVideoStream();
 
       return { local, remote };
     }

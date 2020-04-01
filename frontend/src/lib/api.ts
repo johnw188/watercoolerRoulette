@@ -75,7 +75,7 @@ export default class API {
           }
         }
       }
-      /* exlint-enable */
+      /* eslint-enable */
     }
 
     public static async postAnswerIce(answer: AnswerIce): Promise<void> {

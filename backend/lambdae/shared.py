@@ -24,7 +24,7 @@ def get_expired_cookie() -> str:
 
 def get_env_var(name: str) -> str:
     value = os.environ.get(name, None)
-    assert value is not None, "Expected the environment variable \"{}\" to be set."
+    assert value is not None, "Expected the environment variable \"{}\" to be set.".format(name)
     return value
 
 

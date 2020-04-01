@@ -60,6 +60,7 @@ export default class API {
 
     // Return a promise that completes on match
     public static async match(offer: object): Promise<MatchResult> {
+      /* eslint-disable */
       while (true) {
         try {
           return await API.matchAttempt(offer);
@@ -74,6 +75,7 @@ export default class API {
           }
         }
       }
+      /* exlint-enable */
     }
 
     public static async postAnswerIce(answer: AnswerIce): Promise<void> {

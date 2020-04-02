@@ -25,6 +25,7 @@ export default class API {
         const xhr = new XMLHttpRequest();
 
         xhr.addEventListener('load', () => {
+          console.log(typeof xhr.response);
           resolve(xhr);
         });
 
@@ -36,7 +37,7 @@ export default class API {
       });
     }
 
-    private static async matchAttempt(offer: object): Promise<MatchResult> {
+    private static async matchAttempt(offer: OfferIce): Promise<MatchResult> {
       return new Promise((resolve, reject) => {
         API.xhrPromise('POST', API.MATCH_URL, { offer }).then((xhr) => {
           if (xhr.status === 200) {
@@ -59,7 +60,7 @@ export default class API {
     }
 
     // Return a promise that completes on match
-    public static async match(offer: object): Promise<MatchResult> {
+    public static async match(offer: OfferIce): Promise<MatchResult> {
       /* eslint-disable */
       while (true) {
         try {

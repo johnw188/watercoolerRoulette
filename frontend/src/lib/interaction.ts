@@ -27,6 +27,7 @@ export default class ChatInteraction {
         await this.rtcHelpers.setAnswerIce(answerIce);
         update('Setup complete, waiting on remote stream to start');
       } else {
+        this.rtcHelpers = new RtcHelpers('foo');
         update('Using their offer, crafting my answer');
         const answerIce = await this.rtcHelpers.offerIceToAnswerIce(match.offer);
         update('Posting answer');

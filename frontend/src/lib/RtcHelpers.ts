@@ -98,6 +98,7 @@ export default class RtcHelpers {
     }
 
     public async offerIceToAnswerIce(offerIce: OfferIce): Promise<AnswerIce> {
+      console.log(offerIce);
       await this.pc.setRemoteDescription(offerIce.offer);
       await this.addAllIceCandidates(offerIce.ice);
       await this.beginRTCVideoStream();

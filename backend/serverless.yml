@@ -148,7 +148,7 @@ custom:
   
   client:
     bucketName: watercooler-express-client
-    distributionFolder: ../frontend/public
+    distributionFolder: ../frontend/dist
 
   dynamodb:
   # If you only want to use DynamoDB Local in some stages, declare them here

@@ -126,8 +126,8 @@ def test_answers():
     user1, user2 = models_testlib.create_fake_users("fakegroup-ans", 2)
 
     # Emulate the matching process having already finished
-    match = models.MatchesModel(user1.group_id, user1.user_id)
-    match.match_id = user2.user_id
+    match = models.MatchesModel(user1.group_id, user2.user_id)
+    match.match_id = user1.user_id
     match.save()
 
     # Post an answer

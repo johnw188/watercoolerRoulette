@@ -25,6 +25,11 @@ def match_id_to_response(partner: str, offer: dict, offerer: bool) -> dict:
     return shared.json_success_response({"partner": partner, "offer": offer, "offerer": offerer})
 
 
+# Match record format
+# group_id: ID of the shared group
+# user_id: ID of the user waiting (and makes ANSWER)
+# match_id ID of the user that makes OFFER
+
 @shared.json_request
 def match(event, context):
     user = tokens.require_authorization(event)
@@ -55,7 +60,7 @@ def match(event, context):
             logger.info(user.user_id + " user already matched :(")
             continue
         logger.info(user.user_id + " successful match with " + p_match.user_id)
-        return match_id_to_response(p_match.user_id, p_match.offer, True)
+        return match_id_to_response(p_match.user_id, json.loads(p_match.offer), True)
 
     # No luck matching to someone else, so put my record in the table, and wait on it
     waiting_match = models.MatchesModel(
@@ -72,7 +77,7 @@ def match(event, context):
         waiting_match.refresh(consistent_read=True)
         if waiting_match.match_id is not None:
             logger.info(user.user_id + " was proposed to by " + waiting_match.match_id)
-            return match_id_to_response(waiting_match.match_id, waiting_match.offer, False)
+            return match_id_to_response(waiting_match.match_id, json.loads(waiting_match.offer), False)
         time.sleep(INTERVAL_MS / 1000)
 
     # Try to delete the match record, but only if unmatched
@@ -81,7 +86,7 @@ def match(event, context):
     except pynamodb.exceptions.DeleteError:
         waiting_match.refresh()
         logger.info(user.user_id + " matched at last call with " + waiting_match.match_id)
-        return match_id_to_response(waiting_match.match_id, waiting_match.offer, False)
+        return match_id_to_response(waiting_match.match_id, json.loads(waiting_match.offer), False)
 
     logger.info("Exiting -> Timeout")
     timeout_ms = get_timeout_rec_ms()
@@ -95,9 +100,7 @@ def match(event, context):
 @shared.json_request
 def post_answer(event, context):
     user = tokens.require_authorization(event)
-
-    matches_match_id = models.MatchesModel.match_id == user.user_id
-    match = next(models.MatchesModel.query(user.group_id, filter_condition=matches_match_id))
+    match = models.MatchesModel.get(user.group_id, user.user_id)
     event_dict = json.loads(event["body"])
 
     match.update(actions=[models.MatchesModel.answer.set(json.dumps(event_dict["answer"]))])
@@ -107,8 +110,10 @@ def post_answer(event, context):
 @shared.json_request
 def get_answer(event, context):
     user = tokens.require_authorization(event)
-    match = models.MatchesModel.get(user.group_id, user.user_id)
-    return shared.json_success_response({"answer": json.loads(match.answer)})
+    matches_match_id = models.MatchesModel.match_id == user.user_id
+    match = next(models.MatchesModel.query(user.group_id, filter_condition=matches_match_id))
+    answer = json.loads(match.answer) if match.answer is not None else None
+    return shared.json_success_response({"answer": answer})
 
 
 def cleanup(event, context):

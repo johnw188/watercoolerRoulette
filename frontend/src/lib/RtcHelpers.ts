@@ -1,4 +1,4 @@
-import { AnswerIce, OfferIce } from './interfaces';
+import { AnswerIce, OfferIce } from './Interfaces';
 
 export default class RtcHelpers {
     private identity: string
@@ -68,9 +68,8 @@ export default class RtcHelpers {
       const mediaConstraints = {
         audio: true, // We want an audio track
         video: {
-          aspectRatio: {
-            ideal: 1.333333, // 3:2 aspect is preferred
-          },
+          facingMode: { ideal: 'user' },
+          aspectRatio: { ideal: 1.333333 }, // 3:2 aspect is preferred
         },
       };
 
@@ -78,10 +77,12 @@ export default class RtcHelpers {
       this.webcamWaiter = navigator.mediaDevices.getUserMedia(mediaConstraints);
     }
 
+    /* eslint-disable */
     private log(...args: any[]) {
       console.log(`Identity:${this.identity}`);
       args.map(console.log);
     }
+    /* eslint-enable */
 
     public async getOfferIce(): Promise<OfferIce> {
       // Must complete before ice init
@@ -98,10 +99,9 @@ export default class RtcHelpers {
     }
 
     public async offerIceToAnswerIce(offerIce: OfferIce): Promise<AnswerIce> {
-      console.log(offerIce);
+      await this.beginRTCVideoStream();
       await this.pc.setRemoteDescription(offerIce.offer);
       await this.addAllIceCandidates(offerIce.ice);
-      await this.beginRTCVideoStream();
 
       const answer = await this.pc.createAnswer();
       await this.pc.setLocalDescription(answer);

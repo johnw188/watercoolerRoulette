@@ -1,4 +1,4 @@
-import API from './api';
+import API from './Api';
 import RtcHelpers from './RtcHelpers';
 
 interface StreamPair{
@@ -7,42 +7,47 @@ interface StreamPair{
 }
 
 export default class ChatInteraction {
-    private rtcHelpers: RtcHelpers;
+    private rtc?: RtcHelpers;
+
+    private ident: string;
+    // private rtcHelpers: RtcHelpers;
 
     constructor(ident: string) {
-      this.rtcHelpers = new RtcHelpers(ident);
+      this.ident = ident;
     }
 
     public async getStreams(updateCB?: (stage: string) => void): Promise<StreamPair> {
+      const offerRTC = new RtcHelpers(`Offer${this.ident}`);
+      const answerRTC = new RtcHelpers(`Answer${this.ident}`);
+
       const update = updateCB || console.log;
 
-      const offerIce = await this.rtcHelpers.getOfferIce();
+      const offerIce = await offerRTC.getOfferIce();
       update('Created Offer');
       const match = await API.match(offerIce);
       update('Got matched');
       if (match.offerer) {
         update('Match is using my offer, waiting for their answer');
-        let answerIce = null;
-        while (answerIce == null) {
-          // eslint-disable-next-line
-          await API.wait(500)
-          // eslint-disable-next-line
-          answerIce = await API.getAnswerIce();
-        }
+        await API.wait(200); // They have to post first
+        const answerIce = await API.getAnswerIce();
         update('Answer received.');
-        await this.rtcHelpers.setAnswerIce(answerIce);
+        await offerRTC.setAnswerIce(answerIce);
         update('Setup complete, waiting on remote stream to start');
+        this.rtc = offerRTC;
       } else {
-        this.rtcHelpers = new RtcHelpers('foo');
         update('Using their offer, crafting my answer');
-        const answerIce = await this.rtcHelpers.offerIceToAnswerIce(match.offer);
+        const answerIce = await answerRTC.offerIceToAnswerIce(match.offer);
         update('Posting answer');
         await API.postAnswerIce(answerIce);
         update('Answer posted waiting on remote stream to start');
+        this.rtc = answerRTC;
       }
 
-      const local = await this.rtcHelpers.getLocalVideoStream();
-      const remote = await this.rtcHelpers.getRemoteVideoStream();
+      update('Getting local video hook');
+      const local = await this.rtc.getLocalVideoStream();
+
+      update('Getting remote video hook');
+      const remote = await this.rtc.getRemoteVideoStream();
 
       return { local, remote };
     }
@@ -57,6 +62,7 @@ export default class ChatInteraction {
       const offer = await rtc1.getOfferIce();
       update('OFFER');
 
+      // await rtc2.getOfferIce();
       const answer = await rtc2.offerIceToAnswerIce(offer);
       update('ANSWER');
 

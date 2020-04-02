@@ -21,9 +21,8 @@ import { Component, Vue } from 'vue-property-decorator';
 import jwtDecode from 'jwt-decode';
 import cookies from 'js-cookie';
 
-import API from './lib/api';
-import RtcHelpers from './lib/RtcHelpers';
-import ChatInteraction from './lib/interaction';
+import API from './lib/Api';
+import ChatInteraction from './lib/ChatInteraction';
 
 @Component({
   components: {},
@@ -39,7 +38,6 @@ export default class App extends Vue {
   };
 
   public mounted() {
-    console.log('I AM ALIVE');
     this.checkLogin();
   }
 

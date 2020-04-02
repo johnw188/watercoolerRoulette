@@ -1,4 +1,4 @@
-import { AnswerIce, OfferIce } from './interfaces';
+import { AnswerIce, OfferIce } from './Interfaces';
 
 import TimeoutException from './TimeoutException';
 
@@ -83,12 +83,23 @@ export default class API {
       API.xhrPromise('POST', API.ANSWER_URL, { answer });
     }
 
-    public static async getAnswerIce(): Promise<AnswerIce> {
+    public static async getAnswerIceAttempt(): Promise<AnswerIce> {
       return new Promise((resolve) => {
         API.xhrPromise('GET', API.ANSWER_URL).then((xhr: XMLHttpRequest) => {
           resolve(xhr.response.answer);
         });
       });
+    }
+
+    public static async getAnswerIce(): Promise<AnswerIce> {
+      let answer = await this.getAnswerIceAttempt();
+      /* eslint-disable */
+      while (answer === null) {
+        await API.wait(555);
+        answer = await this.getAnswerIceAttempt();
+      }
+      /* eslint-enable */
+      return answer;
     }
 
     public static async userInfo(user?: string): Promise<object> {

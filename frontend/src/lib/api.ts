@@ -53,7 +53,7 @@ export default class API {
       });
     }
 
-    private static wait(timeoutMS: number): Promise<void> {
+    public static wait(timeoutMS: number): Promise<void> {
       return new Promise((resolve) => {
         setTimeout(() => resolve(), timeoutMS);
       });

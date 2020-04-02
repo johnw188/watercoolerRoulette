@@ -22,7 +22,13 @@ export default class ChatInteraction {
       update('Got matched');
       if (match.offerer) {
         update('Match is using my offer, waiting for their answer');
-        const answerIce = await API.getAnswerIce();
+        let answerIce = null;
+        while (answerIce == null) {
+          // eslint-disable-next-line
+          await API.wait(500)
+          // eslint-disable-next-line
+          answerIce = await API.getAnswerIce();
+        }
         update('Answer received.');
         await this.rtcHelpers.setAnswerIce(answerIce);
         update('Setup complete, waiting on remote stream to start');

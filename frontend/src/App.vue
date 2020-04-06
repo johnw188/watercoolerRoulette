@@ -94,7 +94,7 @@ export default class App extends Vue {
 
     const answererStreamsLive = answerer.getStreams().then((pair) => {
       this.$refs.answererLocal.srcObject = pair.local;
-      this.$refs.answererLocal.srcObject = pair.remote;
+      this.$refs.answererRemote.srcObject = pair.remote;
       console.log('A streams assigned');
     });
 

@@ -67,7 +67,10 @@ export default class WebRtcWrapper {
 
       // This promise comes live after receiving a remote stream
       this.remoteStreamWaiter = new Promise((resolve) => {
-        this.pc.ontrack = (event) => resolve(event.streams.slice(0, event.streams.length));
+        this.pc.ontrack = (event) => {
+          this.log('ONTRACK', event.streams);
+          resolve(event.streams.slice(0, event.streams.length));
+        };
       });
 
       const mediaConstraints = {
@@ -126,19 +129,23 @@ export default class WebRtcWrapper {
 
     public async getStreams(): Promise<StreamPair> {
       const local = await this.webcamWaiter;
+      this.log('Got local stream');
+
       const remote = (await this.remoteStreamWaiter)[0];
+      this.log('got remote stream');
       return { local, remote };
     }
 
     private async beginRTCVideoStream(): Promise<void> {
       const webcamStream = await this.webcamWaiter;
-      webcamStream.getTracks().map(
-        (track) => this.pc.addTransceiver(track, { streams: [webcamStream] }),
-      ).forEach((tx) => this.transceivers.push(tx));
+      webcamStream.getTracks().forEach(
+        (track) => this.pc.addTrack(track, webcamStream),
+      );
     }
 
     public async close(): Promise<void> {
       this.transceivers.forEach(this.log);
-      // this.transceivers.forEach((tx) => tx.stop());
+      this.pc.getTransceivers().forEach((tx) => tx.stop());
+      this.pc.close();
     }
 }

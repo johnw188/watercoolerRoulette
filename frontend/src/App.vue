@@ -78,24 +78,18 @@ export default class App extends Vue {
     const offerer = new RtcPair('Offerer');
     const answerer = new RtcPair('Answerer');
 
-    console.log('Offer');
     const offerIce = await offerer.getOfferIce();
-    console.log('Answer');
     const answerIce = await answerer.offerIceToAnswerIce(offerIce);
-    console.log('Set Answer');
     await offerer.setAnswerIce(answerIce);
-    console.log('Setup done');
 
     const offererStreamsLive = offerer.getStreams().then((pair) => {
       this.$refs.offererLocal.srcObject = pair.local;
       this.$refs.offererRemote.srcObject = pair.remote;
-      console.log('O streams assigned');
     });
 
     const answererStreamsLive = answerer.getStreams().then((pair) => {
       this.$refs.answererLocal.srcObject = pair.local;
       this.$refs.answererRemote.srcObject = pair.remote;
-      console.log('A streams assigned');
     });
 
     await Promise.all([offererStreamsLive, answererStreamsLive]);

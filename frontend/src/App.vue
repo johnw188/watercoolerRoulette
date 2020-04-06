@@ -37,7 +37,6 @@ import cookies from 'js-cookie';
 
 import API from './lib/Api';
 import ChatInteraction from './lib/ChatInteraction';
-import { OfferIce, AnswerIce } from './lib/Interfaces';
 import RtcPair from './lib/RtcPair';
 
 @Component({

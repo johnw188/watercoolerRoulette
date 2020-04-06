@@ -1,6 +1,6 @@
-import { AnswerIce, OfferIce } from './Interfaces';
+import { AnswerIce, OfferIce, StreamPair } from './Interfaces';
 
-export default class RtcHelpers {
+export default class WebRtcWrapper {
     private identity: string
 
     private pc: RTCPeerConnection;
@@ -17,6 +17,8 @@ export default class RtcHelpers {
 
     private webcamWaiter: Promise<MediaStream>;
 
+    private transceivers: Array<RTCRtpTransceiver>;
+
     constructor(identity: string) {
       this.identity = identity;
 
@@ -28,6 +30,8 @@ export default class RtcHelpers {
 
       this.pc = new RTCPeerConnection(configuration);
 
+      this.transceivers = [];
+
       // This promise resolved after ICE candidate transmission is done
       this.iceWaiter = new Promise((resolve) => {
         const iceOptions = new Array<RTCIceCandidate>();
@@ -35,6 +39,7 @@ export default class RtcHelpers {
           if (e.candidate !== null) {
             iceOptions.push(e.candidate);
           } else {
+            this.log(`Completed Gathering candidates:${iceOptions.length}`);
             resolve(iceOptions);
           }
         };
@@ -99,9 +104,9 @@ export default class RtcHelpers {
     }
 
     public async offerIceToAnswerIce(offerIce: OfferIce): Promise<AnswerIce> {
-      await this.beginRTCVideoStream();
       await this.pc.setRemoteDescription(offerIce.offer);
       await this.addAllIceCandidates(offerIce.ice);
+      await this.beginRTCVideoStream();
 
       const answer = await this.pc.createAnswer();
       await this.pc.setLocalDescription(answer);
@@ -119,19 +124,21 @@ export default class RtcHelpers {
       if (this.dcSend) this.dcSend.send(message);
     }
 
-    public async getRemoteVideoStream(): Promise<MediaStream> {
-      const streams = await this.remoteStreamWaiter;
-      return streams[0];
+    public async getStreams(): Promise<StreamPair> {
+      const local = await this.webcamWaiter;
+      const remote = (await this.remoteStreamWaiter)[0];
+      return { local, remote };
     }
 
     private async beginRTCVideoStream(): Promise<void> {
-      const webcamStream = await this.getLocalVideoStream();
-      webcamStream.getTracks().forEach(
+      const webcamStream = await this.webcamWaiter;
+      webcamStream.getTracks().map(
         (track) => this.pc.addTransceiver(track, { streams: [webcamStream] }),
-      );
+      ).forEach((tx) => this.transceivers.push(tx));
     }
 
-    public async getLocalVideoStream(): Promise<MediaStream> {
-      return this.webcamWaiter;
+    public async close(): Promise<void> {
+      this.transceivers.forEach(this.log);
+      // this.transceivers.forEach((tx) => tx.stop());
     }
 }

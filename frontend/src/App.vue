@@ -5,12 +5,26 @@
     </div>
     <div v-else>
       <h1>Watercooler Roulette</h1>
-      <video bind:this={localVideo} id="localVideo" ref="localVideo" autoplay muted></video>
-      <video bind:this={remoteVideo} id="remoteVideo" ref="remoteVideo" autoplay></video>
-      <p>{{displayState}}</p>
 
-      <button v-on:click="runRTCTest">RTC TEST</button>
-      <button v-on:click="runMatchTest">MATCH TEST</button>
+      <h2> Offerer Streams: </h2>
+      <span title="offererLocal">
+        <video alt="local" bind:this={offererLocal} ref="offererLocal" autoplay muted></video>
+      </span>
+      <span title="offererRemote">
+        <video alt="remote" bind:this={offererRemote} ref="offererRemote" autoplay></video>
+      </span>
+
+      <h2> Ansewerer Streams: </h2>
+      <span title="answererLocal">
+        <video bind:this={answererLocal} ref="answererLocal" autoplay muted></video>
+      </span>
+      <span title="answererRemote">
+        <video bind:this={answererRemote} ref="answererRemote" autoplay></video>
+      </span>
+      <p>
+        <button v-on:click="runRTCTest">RTC TEST</button>
+        <button v-on:click="runMatchTest">MATCH TEST</button>
+      </p>
     </div>
   </div>
 </template>
@@ -23,6 +37,8 @@ import cookies from 'js-cookie';
 
 import API from './lib/Api';
 import ChatInteraction from './lib/ChatInteraction';
+import { OfferIce, AnswerIce } from './lib/Interfaces';
+import RtcPair from './lib/RtcPair';
 
 @Component({
   components: {},
@@ -33,15 +49,16 @@ export default class App extends Vue {
   loggedIn = false;
 
   $refs!: {
-    remoteVideo: HTMLMediaElement;
-    localVideo: HTMLMediaElement;
+    offererLocal: HTMLMediaElement;
+    offererRemote: HTMLMediaElement;
+    answererLocal: HTMLMediaElement;
+    answererRemote: HTMLMediaElement;
   };
 
   public mounted() {
     this.checkLogin();
   }
 
-  // TODO(meawoppl) call me
   public checkLogin() {
     const token = cookies.get('token');
     if (token != null) {
@@ -49,7 +66,7 @@ export default class App extends Vue {
         this.loggedIn = true;
       }
     } else {
-      // Shim for dev mode, where I can't see my cookie, but the API can
+      // Shim for dev mode, where I can't see my cookie, but the API can retrieve userinfo
       API.userInfo().then(() => {
         this.loggedIn = true;
       }).catch(() => {
@@ -58,17 +75,37 @@ export default class App extends Vue {
     }
   }
 
-  public runRTCTest() {
-    ChatInteraction.runRTCTest().then((pair) => {
-      this.$refs.localVideo.srcObject = pair.local;
-      this.$refs.remoteVideo.srcObject = pair.remote;
+  public async runRTCTest(): Promise<void> {
+    const offerer = new RtcPair('Offerer');
+    const answerer = new RtcPair('Answerer');
+
+    console.log('Offer');
+    const offerIce = await offerer.getOfferIce();
+    console.log('Answer');
+    const answerIce = await answerer.offerIceToAnswerIce(offerIce);
+    console.log('Set Answer');
+    await offerer.setAnswerIce(answerIce);
+    console.log('Setup done');
+
+    const offererStreamsLive = offerer.getStreams().then((pair) => {
+      this.$refs.offererLocal.srcObject = pair.local;
+      this.$refs.offererRemote.srcObject = pair.remote;
+      console.log('O streams assigned');
     });
+
+    const answererStreamsLive = answerer.getStreams().then((pair) => {
+      this.$refs.answererLocal.srcObject = pair.local;
+      this.$refs.answererLocal.srcObject = pair.remote;
+      console.log('A streams assigned');
+    });
+
+    await Promise.all([offererStreamsLive, answererStreamsLive]);
   }
 
   public runMatchTest() {
     new ChatInteraction('NoOne').getStreams().then((pair) => {
-      this.$refs.localVideo.srcObject = pair.local;
-      this.$refs.remoteVideo.srcObject = pair.remote;
+      this.$refs.offererLocal.srcObject = pair.local;
+      this.$refs.offererRemote.srcObject = pair.remote;
     });
   }
 }
@@ -82,5 +119,13 @@ export default class App extends Vue {
   text-align: center;
   color: #2c3e50;
   margin-top: 60px;
+}
+
+video {
+  width: 45%;
+  outline-width: 1px;
+  outline-color: black;
+  outline-style: solid;
+  margin: 3px;
 }
 </style>

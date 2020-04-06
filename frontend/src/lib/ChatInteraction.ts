@@ -10,7 +10,7 @@ export default class ChatInteraction {
       this.ident = ident;
     }
 
-    public async getStreams(): Promise<StreamPair> {
+    public async getRtcInitialized(): Promise<RtcPair> {
       const rtcPair = new RtcPair(`Offer-${this.ident}`);
 
       /* eslint-disable */
@@ -36,6 +36,6 @@ export default class ChatInteraction {
         update('Answer posted waiting on remote stream to start');
       }
 
-      return rtcPair.getStreams();
+      return rtcPair;
     }
 }

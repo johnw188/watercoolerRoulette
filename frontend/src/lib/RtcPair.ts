@@ -6,7 +6,9 @@ export default class RtcPair {
 
     private pcAnswer: WebRtcWrapper;
 
-    private pc: WebRtcWrapper | null;
+    private pc?: WebRtcWrapper;
+
+    private isOffer?: boolean;
 
     private identity: string;
 
@@ -15,8 +17,6 @@ export default class RtcPair {
 
       this.pcOffer = new WebRtcWrapper(`O-${this.identity}`);
       this.pcAnswer = new WebRtcWrapper(`A-${this.identity}`);
-
-      this.pc = null;
     }
 
     /* eslint-disable */
@@ -29,6 +29,7 @@ export default class RtcPair {
     public async getOfferIce(): Promise<OfferIce> {
       this.pcAnswer.close();
       this.pc = this.pcOffer;
+      this.isOffer = true;
       return this.pcOffer.getOfferIce();
     }
 
@@ -38,6 +39,7 @@ export default class RtcPair {
       const answerIce = await this.pcAnswer.offerIceToAnswerIce(offerIce);
 
       this.pc = this.pcAnswer;
+      this.isOffer = false;
       return answerIce;
     }
 
@@ -60,6 +62,13 @@ export default class RtcPair {
 
     public async getStreams(): Promise<StreamPair> {
       return this.requirePC().getStreams();
+    }
+
+    public isOfferer(): boolean {
+      if (this.isOffer !== undefined) {
+        return this.isOffer;
+      }
+      throw new Error('Not setup yet!!');
     }
 
     public async close(): Promise<void> {

@@ -102,9 +102,16 @@ export default class App extends Vue {
   }
 
   public runMatchTest() {
-    new ChatInteraction('NoOne').getStreams().then((pair) => {
-      this.$refs.offererLocal.srcObject = pair.local;
-      this.$refs.offererRemote.srcObject = pair.remote;
+    new ChatInteraction('NoOne').getRtcInitialized().then((rtc) => {
+      rtc.getStreams().then((streams) => {
+        if (rtc.isOfferer()) {
+          this.$refs.offererLocal.srcObject = streams.local;
+          this.$refs.offererRemote.srcObject = streams.remote;
+        } else {
+          this.$refs.answererLocal.srcObject = streams.local;
+          this.$refs.answererRemote.srcObject = streams.remote;
+        }
+      });
     });
   }
 }

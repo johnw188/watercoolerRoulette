@@ -91,10 +91,16 @@ export default class API {
       });
     }
 
-    public static async getAnswerIce(): Promise<AnswerIce> {
+    public static async getAnswerIce(timeoutMS = 10000): Promise<AnswerIce> {
       let answer = await this.getAnswerIceAttempt();
+
+      const startTime = +new Date();
+
       /* eslint-disable */
-      while (answer === null) {
+      while(answer === null) {
+        if((+new Date() - startTime) > timeoutMS) {
+          throw new Error("Timeout while awaiting answer.")
+        }
         await API.wait(555);
         answer = await this.getAnswerIceAttempt();
       }

@@ -144,8 +144,8 @@ export default class WebRtcWrapper {
     }
 
     public async close(): Promise<void> {
-      this.transceivers.forEach(this.log);
-      this.pc.getTransceivers().forEach((tx) => tx.stop());
+      this.pc.getTransceivers().forEach(this.log);
+      // this.pc.getTransceivers().forEach((tx) => tx.stop());
       this.pc.close();
     }
 }

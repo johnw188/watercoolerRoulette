@@ -1,6 +1,5 @@
 import API from './Api';
 import RtcPair from './RtcPair';
-import { StreamPair } from './Interfaces';
 
 export default class ChatInteraction {
     private ident: string;

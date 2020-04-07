@@ -25,7 +25,9 @@ export default class API {
         const xhr = new XMLHttpRequest();
 
         xhr.addEventListener('load', () => {
+          /* eslint-disable */
           console.log(typeof xhr.response);
+          /* eslint-enable */
           resolve(xhr);
         });
 
@@ -45,8 +47,10 @@ export default class API {
           } else if (xhr.status === 408) {
             reject(new TimeoutException(xhr.response.message, xhr.response.timeout_ms));
           } else {
+            /* eslint-disable */
             console.error('Unhandled exception in matchAttempt');
             console.log(xhr);
+            /* eslint-enable */
             reject();
           }
         });
@@ -69,9 +73,13 @@ export default class API {
           if (e instanceof TimeoutException) {
             const timeoutMS = e.getTimeoutMS();
             await API.wait(timeoutMS);
+            /* eslint-disable */
             console.log(`Waiting ${timeoutMS}ms`);
+            /* eslint-enable */
           } else {
+            /* eslint-disable */
             console.log();
+            /* eslint-enable */
             throw (e);
           }
         }

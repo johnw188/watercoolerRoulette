@@ -17,8 +17,6 @@ export default class WebRtcWrapper {
 
     private webcamWaiter: Promise<MediaStream>;
 
-    private transceivers: Array<RTCRtpTransceiver>;
-
     constructor(identity: string) {
       this.identity = identity;
 
@@ -29,8 +27,6 @@ export default class WebRtcWrapper {
       };
 
       this.pc = new RTCPeerConnection(configuration);
-
-      this.transceivers = [];
 
       // This promise resolved after ICE candidate transmission is done
       this.iceWaiter = new Promise((resolve) => {
@@ -144,8 +140,9 @@ export default class WebRtcWrapper {
     }
 
     public async close(): Promise<void> {
-      this.pc.getTransceivers().forEach(this.log);
+      // this.pc.getTransceivers().forEach((tx) => this.log(tx));
       // this.pc.getTransceivers().forEach((tx) => tx.stop());
-      this.pc.close();
+      // this.pc.close();
+      console.log(this);
     }
 }

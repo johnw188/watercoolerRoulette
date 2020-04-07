@@ -25,11 +25,6 @@ def match_id_to_response(partner: str, offer: dict, offerer: bool) -> dict:
     return shared.json_success_response({"partner": partner, "offer": offer, "offerer": offerer})
 
 
-# Match record format
-# group_id: ID of the shared group
-# user_id: ID of the user waiting (and makes ANSWER)
-# match_id ID of the user that makes OFFER
-
 @shared.json_request
 def match(event, context):
     user = tokens.require_authorization(event)
@@ -96,10 +91,16 @@ def match(event, context):
         j={"timeout_ms": timeout_ms}
     )
 
+# Match record format
+# group_id: ID of the shared group
+# user_id: ID of the user waiting (and makes ANSWER)
+# match_id ID of the user that makes OFFER
+
 
 @shared.json_request
 def post_answer(event, context):
     user = tokens.require_authorization(event)
+    print("Post answer for user_id:" + user.user_id)
     match = models.MatchesModel.get(user.group_id, user.user_id)
     event_dict = json.loads(event["body"])
 
@@ -110,8 +111,10 @@ def post_answer(event, context):
 @shared.json_request
 def get_answer(event, context):
     user = tokens.require_authorization(event)
+    print("Get answer for user_id:" + user.user_id)
     matches_match_id = models.MatchesModel.match_id == user.user_id
     match = next(models.MatchesModel.query(user.group_id, filter_condition=matches_match_id))
+    print("Match answer raw:" + str(match.answer))
     answer = json.loads(match.answer) if match.answer is not None else None
     return shared.json_success_response({"answer": answer})
 

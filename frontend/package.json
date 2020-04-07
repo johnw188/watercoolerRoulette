@@ -12,6 +12,8 @@
   "dependencies": {
     "@types/js-cookie": "^2.2.5",
     "@types/jwt-decode": "^2.2.1",
+    "bootstrap": "^4.4.1",
+    "bootstrap-vue": "^2.10.1",
     "core-js": "^3.6.4",
     "js-cookie": "^2.2.1",
     "jwt-decode": "^2.2.0",

@@ -1,29 +1,28 @@
 <template>
   <div id="app">
-    <Spinner></Spinner>
     <div v-if="!loggedIn">
-      <a href="https://slack.com/oauth/authorize?scope=users.profile:read,users:read,users:read.email,identify&client_id=241546863697.1005448378753&redirect_uri=https%3A%2F%2Fapi.watercooler.express%2Fauth"><img alt="Sign in with Slack" height="40" width="172" src="https://platform.slack-edge.com/img/sign_in_with_slack.png" srcset="https://platform.slack-edge.com/img/sign_in_with_slack.png 1x, https://platform.slack-edge.com/img/sign_in_with_slack@2x.png 2x" /></a>
+      <a
+        href="https://slack.com/oauth/authorize?scope=users.profile:read,users:read,users:read.email,identify&client_id=241546863697.1005448378753&redirect_uri=https%3A%2F%2Fapi.watercooler.express%2Fauth"
+      >
+        <img
+          alt="Sign in with Slack"
+          height="40"
+          width="172"
+          src="https://platform.slack-edge.com/img/sign_in_with_slack.png"
+          srcset="https://platform.slack-edge.com/img/sign_in_with_slack.png 1x, https://platform.slack-edge.com/img/sign_in_with_slack@2x.png 2x"
+        />
+      </a>
     </div>
     <div v-else>
       <h1>Watercooler Express: Totally super working</h1>
 
-      <h2> Offerer Streams: </h2>
-      <span title="offererLocal">
-        <video alt="local" bind:this={offererLocal} ref="offererLocal" autoplay muted></video>
-      </span>
-      <span title="offererRemote">
-        <video alt="remote" bind:this={offererRemote} ref="offererRemote" autoplay></video>
-      </span>
+      <div v-if="matching">
+        <Spinner />
+        <p>Matching...</p>
+      </div>
+      <VideoChat ref="videoChat" />
 
-      <h2> Ansewerer Streams: </h2>
-      <span title="answererLocal">
-        <video bind:this={answererLocal} ref="answererLocal" autoplay muted></video>
-      </span>
-      <span title="answererRemote">
-        <video bind:this={answererRemote} ref="answererRemote" autoplay></video>
-      </span>
       <p>
-        <button v-on:click="runRTCTest">RTC TEST</button>
         <button v-on:click="runMatchTest">MATCH TEST</button>
       </p>
     </div>
@@ -31,31 +30,30 @@
 </template>
 
 <script lang="ts">
-
 import { Component, Vue } from 'vue-property-decorator';
 import jwtDecode from 'jwt-decode';
 import cookies from 'js-cookie';
 
 import API from './lib/Api';
-import ChatInteraction from './lib/ChatInteraction';
-import RtcPair from './lib/RtcPair';
 
 import Spinner from './components/Spinner.vue';
+import VideoChat from './components/VideoChat.vue';
 
 @Component({
-  components: { Spinner },
+  components: { Spinner, VideoChat },
 })
 export default class App extends Vue {
   displayState = 'PREINIT';
 
   loggedIn = false;
 
+  matching = false;
+
+  matched = false;
+
   $refs!: {
-    offererLocal: HTMLMediaElement;
-    offererRemote: HTMLMediaElement;
-    answererLocal: HTMLMediaElement;
-    answererRemote: HTMLMediaElement;
-  };
+    videoChat: VideoChat;
+  }
 
   public mounted() {
     this.checkLogin();
@@ -69,46 +67,21 @@ export default class App extends Vue {
       }
     } else {
       // Shim for dev mode, where I can't see my cookie, but the API can retrieve userinfo
-      API.userInfo().then(() => {
-        this.loggedIn = true;
-      }).catch(() => {
-        this.loggedIn = false;
-      });
+      API.userInfo()
+        .then(() => {
+          this.loggedIn = true;
+        })
+        .catch(() => {
+          this.loggedIn = false;
+        });
     }
   }
 
-  public async runRTCTest(): Promise<void> {
-    const offerer = new RtcPair('Offerer');
-    const answerer = new RtcPair('Answerer');
-
-    const offerIce = await offerer.getOfferIce();
-    const answerIce = await answerer.offerIceToAnswerIce(offerIce);
-    await offerer.setAnswerIce(answerIce);
-
-    const offererStreamsLive = offerer.getStreams().then((pair) => {
-      this.$refs.offererLocal.srcObject = pair.local;
-      this.$refs.offererRemote.srcObject = pair.remote;
-    });
-
-    const answererStreamsLive = answerer.getStreams().then((pair) => {
-      this.$refs.answererLocal.srcObject = pair.local;
-      this.$refs.answererRemote.srcObject = pair.remote;
-    });
-
-    await Promise.all([offererStreamsLive, answererStreamsLive]);
-  }
-
   public runMatchTest() {
-    new ChatInteraction('NoOne').getRtcInitialized().then((rtc) => {
-      rtc.getStreams().then((streams) => {
-        if (rtc.isOfferer()) {
-          this.$refs.offererLocal.srcObject = streams.local;
-          this.$refs.offererRemote.srcObject = streams.remote;
-        } else {
-          this.$refs.answererLocal.srcObject = streams.local;
-          this.$refs.answererRemote.srcObject = streams.remote;
-        }
-      });
+    this.matching = true;
+    this.$refs.videoChat.connectUser().then(() => {
+      this.matched = true;
+      this.matching = false;
     });
   }
 }
@@ -122,13 +95,5 @@ export default class App extends Vue {
   text-align: center;
   color: #2c3e50;
   margin-top: 60px;
-}
-
-video {
-  width: 45%;
-  outline-width: 1px;
-  outline-color: black;
-  outline-style: solid;
-  margin: 3px;
 }
 </style>

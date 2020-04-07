@@ -20,7 +20,7 @@ export default class VideoChat extends Vue {
   };
 
   public async connectUser() {
-    new ChatInteraction('NoOne').getRtcInitialized().then((rtc) => {
+    return new ChatInteraction('NoOne').getRtcInitialized().then((rtc) => {
       rtc.getStreams().then((streams) => {
         this.$refs.local.srcObject = streams.local;
         this.$refs.remote.srcObject = streams.remote;

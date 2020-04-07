@@ -20,10 +20,10 @@
         <Spinner />
         <p>Matching...</p>
       </div>
-      <VideoChat ref="videoChat" />
+      <VideoChat v-show="matched" ref="videoChat" />
 
       <p>
-        <button v-on:click="runMatchTest">MATCH TEST</button>
+        <b-button v-if="!matching" v-on:click="runMatch">Match me!</b-button>
       </p>
     </div>
   </div>
@@ -77,7 +77,7 @@ export default class App extends Vue {
     }
   }
 
-  public runMatchTest() {
+  public runMatch() {
     this.matching = true;
     this.$refs.videoChat.connectUser().then(() => {
       this.matched = true;

@@ -73,13 +73,7 @@ export default class API {
           if (e instanceof TimeoutException) {
             const timeoutMS = e.getTimeoutMS();
             await API.wait(timeoutMS);
-            /* eslint-disable */
-            console.log(`Waiting ${timeoutMS}ms`);
-            /* eslint-enable */
           } else {
-            /* eslint-disable */
-            console.log();
-            /* eslint-enable */
             throw (e);
           }
         }

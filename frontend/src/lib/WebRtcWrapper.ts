@@ -138,11 +138,4 @@ export default class WebRtcWrapper {
         (track) => this.pc.addTrack(track, webcamStream),
       );
     }
-
-    public async close(): Promise<void> {
-      // this.pc.getTransceivers().forEach((tx) => this.log(tx));
-      // this.pc.getTransceivers().forEach((tx) => tx.stop());
-      // this.pc.close();
-      console.log(this);
-    }
 }

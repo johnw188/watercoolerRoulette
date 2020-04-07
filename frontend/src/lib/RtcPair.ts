@@ -27,7 +27,6 @@ export default class RtcPair {
     /* eslint-enable */
 
     public async getOfferIce(): Promise<OfferIce> {
-      this.pcAnswer.close();
       this.pc = this.pcOffer;
       this.isOffer = true;
       return this.pcOffer.getOfferIce();
@@ -35,7 +34,6 @@ export default class RtcPair {
 
     public async offerIceToAnswerIce(offerIce: OfferIce): Promise<AnswerIce> {
       // If this is called, I am the answerer
-      this.pcOffer.close();
       const answerIce = await this.pcAnswer.offerIceToAnswerIce(offerIce);
 
       this.pc = this.pcAnswer;
@@ -69,10 +67,5 @@ export default class RtcPair {
         return this.isOffer;
       }
       throw new Error('Not setup yet!!');
-    }
-
-    public async close(): Promise<void> {
-      this.pcOffer.close();
-      this.pcAnswer.close();
     }
 }

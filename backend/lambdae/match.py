@@ -73,10 +73,10 @@ def match(event, context):
 def post_answer(event, context):
     user = tokens.require_authorization(event)
     print("Post answer for user_id:" + user.user_id)
-    match = models.MatchesModel.get(user.group_id, user.user_id)
-    event_dict = json.loads(event["body"])
+    match = models.MatchesModel.get(user.group_id, user.user_id, consistent_read=True)
+    answer_object = json.loads(event["body"])["answer"]
 
-    match.update(actions=[models.MatchesModel.answer.set(json.dumps(event_dict["answer"]))])
+    match.update(actions=[models.MatchesModel.answer.set(json.dumps(answer_object))])
     return shared.json_success_response({})
 
 
@@ -85,7 +85,10 @@ def get_answer(event, context):
     user = tokens.require_authorization(event)
     print("Get answer for user_id:" + user.user_id)
     matches_match_id = models.MatchesModel.match_id == user.user_id
-    match = next(models.MatchesModel.query(user.group_id, filter_condition=matches_match_id))
+    try:
+        match = next(models.MatchesModel.query(user.group_id, filter_condition=matches_match_id, consistent_read=True))
+    except StopIteration:
+        return shared.json_error_response("No match record found", 404)
     print("Match answer raw:" + str(match.answer))
     answer = json.loads(match.answer) if match.answer is not None else None
     return shared.json_success_response({"answer": answer})

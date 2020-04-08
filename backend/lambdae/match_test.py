@@ -155,5 +155,7 @@ def test_answers():
         ),
         {}
     )
+    response_body = json.loads(result2["body"])
 
-    assert json.loads(result2["body"])["answer"] == answer
+    assert response_body["ok"]
+    assert response_body["answer"] == answer

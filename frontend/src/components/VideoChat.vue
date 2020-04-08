@@ -6,6 +6,7 @@
     <span title="remoteVideo">
       <video alt="remote" bind:this="{remote}" ref="remote" autoplay></video>
     </span>
+    <b-progress :value="value" :max="max" show-progress animated></b-progress>
   </div>
 </template>
 

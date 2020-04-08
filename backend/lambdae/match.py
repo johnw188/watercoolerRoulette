@@ -15,7 +15,7 @@ CLEANUP_TIME_MS = 2000
 
 
 def get_timeout_rec_ms():
-    return int(random.uniform(50, 500))
+    return int(random.uniform(500, 2000))
 
 
 def match_id_to_response(partner: str, offer: dict, offerer: bool) -> dict:
@@ -47,7 +47,7 @@ def match(event, context):
         match = models.MatchesModel.get(user.group_id, user.user_id)
         match.delete()
         logger.warning(user.user_id + " found hanging match record.")
-        return timeout_response(1000)
+        return timeout_response(5000)
     except models.MatchesModel.DoesNotExist:
         pass
 
@@ -88,7 +88,7 @@ def get_answer(event, context):
     try:
         match = next(models.MatchesModel.query(user.group_id, filter_condition=matches_match_id, consistent_read=True))
     except StopIteration:
-        return shared.json_error_response("No match record found", 404)
+        return shared.json_error_response(message="No match record found", code=404)
     print("Match answer raw:" + str(match.answer))
     answer = json.loads(match.answer) if match.answer is not None else None
     return shared.json_success_response({"answer": answer})

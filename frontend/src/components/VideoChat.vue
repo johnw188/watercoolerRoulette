@@ -34,6 +34,10 @@ export default class VideoChat extends Vue {
 
   countdownValue = this.CHAT_DURATION;
 
+  onDisconnect = () => {
+    // Do nothing by default
+  }
+
   public async connectUser() {
     return new ChatInteraction('NoOne').getRtcInitialized().then((rtc) => {
       rtc.getStreams().then((streams) => {
@@ -56,7 +60,7 @@ export default class VideoChat extends Vue {
       this.updateProgress(this.timer.getTimeValues());
     });
     this.timer.addEventListener('targetAchieved', () => {
-      this.disconnectUser();
+      this.disconnect();
       this.progressBarTime = 0;
       this.countdownValue = this.CHAT_DURATION;
     });
@@ -65,10 +69,12 @@ export default class VideoChat extends Vue {
   public updateProgress(timeValues: TimeCounter) {
     this.progressBarTime = timeValues.secondTenths * 0.1 + timeValues.seconds;
     this.countdownValue = this.CHAT_DURATION - timeValues.seconds;
-    console.log(`Progress bar time: ${this.progressBarTime}, Countdown Value: ${this.countdownValue}`);
   }
 
-  public disconnectUser() {
+  public disconnect() {
+    // Do this first as close() is broken, but once close() is fixed move to after the activeRTCPair
+    // block
+    this.onDisconnect();
     if (this.activeRTCPair) {
       this.activeRTCPair.close();
       this.activeRTCPair = undefined;

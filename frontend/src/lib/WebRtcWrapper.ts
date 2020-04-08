@@ -55,8 +55,7 @@ export default class WebRtcWrapper {
         this.pc.ondatachannel = (channelEvent) => {
           this.dcRecv = channelEvent.channel;
           this.dcRecv.onmessage = (e) => {
-            if(this.onMessage)
-              this.onMessage(e);
+            if (this.onMessage) this.onMessage(e);
           };
           this.dcRecv.onopen = (e) => {
             this.log(` Open RECV:${e}`);

@@ -1,4 +1,5 @@
 import random
+import os
 import lambdae.models as models
 
 
@@ -31,3 +32,17 @@ def create_fake_users(group_id: str, number: int,  seed=None, prefix="fake_user_
 
 def create_fake_user(group_id: str):
     return create_fake_users(group_id, 1)[0]
+
+
+def clear_tables():
+    assert "IS_LOCAL" in os.environ
+    deleted = 0
+    for entry in models.UsersModel.scan():
+        entry.delete()
+        deleted += 1
+
+    for entry in models.MatchesModel.scan():
+        entry.delete()
+        deleted += 1
+
+    print("Deleted %i records" % deleted)

@@ -1,13 +1,10 @@
 import datetime
 import json
-import time
 import random
 
 import lambdae.models as models
 import lambdae.shared as shared
 import lambdae.jwt_tokens as tokens
-
-import pynamodb.exceptions
 
 import logging
 logger = logging.getLogger()
@@ -25,6 +22,16 @@ def match_id_to_response(partner: str, offer: dict, offerer: bool) -> dict:
     return shared.json_success_response({"partner": partner, "offer": offer, "offerer": offerer})
 
 
+def timeout_response(timeout_ms: int = None):
+    logger.info("Exiting -> Timeout")
+    timeout_ms = get_timeout_rec_ms() if timeout_ms is None else timeout_ms
+    return shared.json_error_response(
+        message="Timed out waiting for match, try again in %ims!" % timeout_ms,
+        code=200,
+        j={"timeout_ms": timeout_ms}
+    )
+
+
 @shared.json_request
 def match(event, context):
     user = tokens.require_authorization(event)
@@ -32,69 +39,34 @@ def match(event, context):
     event_dict = json.loads(event["body"])
     offer = event_dict["offer"]
 
-    # The user should not have a match record. Delete it, and log if that was successful
+    # The user is calling /match, but already has a match record...
+    # - Delete it
+    # - log it
+    # - time this user out for longer than usual
     try:
-        models.MatchesModel(user.group_id, user.user_id).delete()
+        match = models.MatchesModel.get(user.group_id, user.user_id)
+        match.delete()
         logger.warning(user.user_id + " found hanging match record.")
-    except pynamodb.exceptions.DeleteError:
+        return timeout_response(1000)
+    except models.MatchesModel.DoesNotExist:
         pass
 
-    HAS_NO_MATCH = models.MatchesModel.match_id.does_not_exist()
-
-    # Get the unmatched people in my group
-    potential_matches = list(models.MatchesModel.query(user.group_id, filter_condition=HAS_NO_MATCH))
-    random.shuffle(potential_matches)
-
-    logger.info(user.user_id + " Searching through potential matches")
-    actions = [models.MatchesModel.match_id.set(user.user_id), models.MatchesModel.offer.set(json.dumps(offer))]
-    for p_match in potential_matches:
-        try:
-            logger.info(user.user_id + " proposing match with " + p_match.user_id)
-            p_match.update(actions=actions, condition=HAS_NO_MATCH)
-        except pynamodb.exceptions.UpdateError:
-            logger.info(user.user_id + " user already matched :(")
-            continue
-        logger.info(user.user_id + " successful match with " + p_match.user_id)
-        return match_id_to_response(p_match.user_id, json.loads(p_match.offer), True)
-
-    # No luck matching to someone else, so put my record in the table, and wait on it
-    waiting_match = models.MatchesModel(
-        group_id=user.group_id,
-        user_id=user.user_id,
-        match_id=None,
-        offer=None,
-        answer=None
-    )
-    logger.info(user.user_id + " adding self to the waiting table")
-    waiting_match.save()
-
-    while context.get_remaining_time_in_millis() > CLEANUP_TIME_MS:
-        waiting_match.refresh(consistent_read=True)
-        if waiting_match.match_id is not None:
-            logger.info(user.user_id + " was proposed to by " + waiting_match.match_id)
-            return match_id_to_response(waiting_match.match_id, json.loads(waiting_match.offer), False)
-        time.sleep(INTERVAL_MS / 1000)
-
-    # Try to delete the match record, but only if unmatched
     try:
-        waiting_match.delete(condition=models.MatchesModel.match_id.does_not_exist())
-    except pynamodb.exceptions.DeleteError:
-        waiting_match.refresh()
-        logger.info(user.user_id + " matched at last call with " + waiting_match.match_id)
-        return match_id_to_response(waiting_match.match_id, json.loads(waiting_match.offer), False)
+        match = models.propose_match(user, offer)
+        logger.info("Successful proposal to: " + match.user_id)
+        return match_id_to_response(match.user_id, offer, True)
+    except models.NoMatchException as e:
+        logger.info("No luck proposing a match: " + e.msg)
 
-    logger.info("Exiting -> Timeout")
-    timeout_ms = get_timeout_rec_ms()
-    return shared.json_error_response(
-        message="Timed out waiting for match, try again in %ims!" % timeout_ms,
-        code=200,
-        j={"timeout_ms": timeout_ms}
-    )
+    time_to_await_match_ms = (context.get_remaining_time_in_millis() - CLEANUP_TIME_MS)
+    time_to_await_match_ms = max(0, time_to_await_match_ms)
+    try:
+        match = models.await_match(user, time_to_await_match_ms)
+        return match_id_to_response(match.match_id, json.loads(match.offer), False)
+    except models.NoMatchException as e:
+        logger.info("No luck after waiting: " + e.msg)
 
-# Match record format
-# group_id: ID of the shared group
-# user_id: ID of the user waiting (and makes ANSWER)
-# match_id ID of the user that makes OFFER
+    return timeout_response()
 
 
 @shared.json_request

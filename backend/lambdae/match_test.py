@@ -40,14 +40,12 @@ def test_match_timeout():
 
     body = json.loads(result["body"])
     print(body["message"])
-    assert result["statusCode"] == 408
+    assert result["statusCode"] == 200
+    assert not body["ok"]
     assert body["timeout_ms"] > 0
 
 
-def request_match(group_id, user_id):
-    # Forge myself a JWT token
-    user = models_testlib.create_fake_user(group_id)
-
+def request_match(user: models.UsersModel):
     start_time = time.time()
     for x in range(20):
         response = lambdae.match.match(make_json_event(
@@ -57,10 +55,12 @@ def request_match(group_id, user_id):
 
         results = json.loads(response["body"])
 
-        if response["statusCode"] == 500:
+        if response["statusCode"] != 200:
             logger.error(results)
+            raise Exception
 
         if(results["ok"]):
+            assert isinstance(results["offer"], dict)
             return (user.user_id, dict(
                 time=time.time() - start_time,
                 partner=results["partner"],
@@ -75,11 +75,18 @@ def request_match(group_id, user_id):
     assert False, "Timed out"
 
 
+def test_trivial():
+    models_testlib.clear_tables()
+    _do_concurrent_matches(2, 2)
+
+
 def test_simple():
+    models_testlib.clear_tables()
     _do_concurrent_matches(2, 100)
 
 
 def test_stress():
+    models_testlib.clear_tables()
     _do_concurrent_matches(10, 200)
 
 
@@ -89,10 +96,10 @@ def ent():
 
 def _do_concurrent_matches(concurrency: int, n_users: int):
     fake_team = "faketeam" + ent()
-    fake_teammates = ["fake%i-%s" % (i, ent()) for i in range(n_users)]
+    users = models_testlib.create_fake_users(fake_team, n_users)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as tpe:
-        results = dict([r for r in tpe.map(lambda teammate: request_match(fake_team, teammate), fake_teammates)])
+        results = dict([r for r in tpe.map(request_match, users)])
 
     # Stupid check the results
     for my_id, v in results.items():

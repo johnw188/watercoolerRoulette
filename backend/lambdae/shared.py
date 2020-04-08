@@ -38,7 +38,7 @@ class AuthException(Exception):
 
 def get_header(headers: dict, keyname: str, default: str) -> str:
     """
-    This function deals with the inconsistent key casing :(
+    This function deals with the inconsistent casing of http headers :(
 
     A fine example of why we can't have nice things
     """

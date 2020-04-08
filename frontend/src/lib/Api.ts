@@ -45,7 +45,7 @@ export default class API {
           if (xhr.status === 200 && xhr.response.ok) {
             resolve(xhr.response);
           } else if (xhr.status === 200 && !xhr.response.ok && xhr.response.timeout_ms) {
-              reject(new TimeoutException(xhr.response.message, xhr.response.timeout_ms));
+            reject(new TimeoutException(xhr.response.message, xhr.response.timeout_ms));
           } else {
             /* eslint-disable */
             console.error('Unhandled exception in matchAttempt');

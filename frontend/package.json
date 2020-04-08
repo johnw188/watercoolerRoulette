@@ -15,6 +15,7 @@
     "bootstrap": "^4.4.1",
     "bootstrap-vue": "^2.10.1",
     "core-js": "^3.6.4",
+    "easytimer.js": "^4.1.1",
     "js-cookie": "^2.2.1",
     "jwt-decode": "^2.2.0",
     "vue": "^2.6.11",

@@ -70,7 +70,7 @@ export default class RtcPair {
     }
 
     public close(): void {
-        this.pcOffer.close();
-        this.pcAnswer.close();
+      this.pcOffer.close();
+      this.pcAnswer.close();
     }
 }

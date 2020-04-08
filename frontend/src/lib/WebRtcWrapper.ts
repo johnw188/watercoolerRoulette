@@ -140,7 +140,7 @@ export default class WebRtcWrapper {
     }
 
     public close(): void {
-      this.pc.getTransceivers().forEach(tx => {tx.stop()});
+      this.pc.getTransceivers().forEach((tx) => { tx.stop(); });
       this.pc.close();
     }
 }

@@ -47,7 +47,7 @@ export default class RtcPair {
 
     /**
      * Commit to being the answering party in the conversion.
-     * 
+     *
      * Uses the `OfferIce` passed in to produce a corresponding
      * `AnswerIce` on promise maturation.
      *
@@ -67,7 +67,7 @@ export default class RtcPair {
 
     /**
      * Commit to being the offering party in the conversation.
-     * 
+     *
      * Use `AnswerIce` instance to complete the RTC handshaking process.
      *
      * @param {AnswerIce} answerIce
@@ -81,7 +81,7 @@ export default class RtcPair {
       this.isOffer = true;
     }
 
-    
+
     /**
      * Used for methods that require commitment to a role in the Rtc process
      * Returns the active `RtcPeerConnection` that this instance should be using
@@ -97,7 +97,7 @@ export default class RtcPair {
       throw new Error('Not setup yet');
     }
 
-    
+
     /**
      * Send a message to the peer that will be handled by the function
      * setup using `setOnMessage()`
@@ -110,7 +110,7 @@ export default class RtcPair {
       return this.requirePC().sendMessage(message);
     }
 
-    
+
     /**
      * Set the callback to be run with the peer calls `sendMessage()`.
      * This handler will be called with the raw `MessageEvent` instance:

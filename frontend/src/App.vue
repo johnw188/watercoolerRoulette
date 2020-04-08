@@ -65,7 +65,7 @@ export default class App extends Vue {
       if (jwtDecode(token) !== null) {
         this.loggedIn = true;
       }
-    } else {
+    } else if (location.hostname === "localhost") {
       // Shim for dev mode, where I can't see my cookie, but the API can retrieve userinfo
       API.userInfo()
         .then(() => {
@@ -74,6 +74,8 @@ export default class App extends Vue {
         .catch(() => {
           this.loggedIn = false;
         });
+    } else {
+      this.loggedIn = false;
     }
   }
 

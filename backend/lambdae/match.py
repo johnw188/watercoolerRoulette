@@ -87,7 +87,7 @@ def match(event, context):
     timeout_ms = get_timeout_rec_ms()
     return shared.json_error_response(
         message="Timed out waiting for match, try again in %ims!" % timeout_ms,
-        code=408,
+        code=200,
         j={"timeout_ms": timeout_ms}
     )
 

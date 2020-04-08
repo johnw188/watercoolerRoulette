@@ -42,10 +42,10 @@ export default class API {
     private static async matchAttempt(offer: OfferIce): Promise<MatchResult> {
       return new Promise((resolve, reject) => {
         API.xhrPromise('POST', API.MATCH_URL, { offer }).then((xhr) => {
-          if (xhr.status === 200) {
+          if (xhr.status === 200 && xhr.response.ok) {
             resolve(xhr.response);
-          } else if (xhr.status === 408) {
-            reject(new TimeoutException(xhr.response.message, xhr.response.timeout_ms));
+          } else if (xhr.status === 200 && !xhr.response.ok && xhr.response.timeout_ms) {
+              reject(new TimeoutException(xhr.response.message, xhr.response.timeout_ms));
           } else {
             /* eslint-disable */
             console.error('Unhandled exception in matchAttempt');
@@ -73,13 +73,7 @@ export default class API {
           if (e instanceof TimeoutException) {
             const timeoutMS = e.getTimeoutMS();
             await API.wait(timeoutMS);
-            /* eslint-disable */
-            console.log(`Waiting ${timeoutMS}ms`);
-            /* eslint-enable */
           } else {
-            /* eslint-disable */
-            console.log();
-            /* eslint-enable */
             throw (e);
           }
         }

@@ -68,4 +68,9 @@ export default class RtcPair {
       }
       throw new Error('Not setup yet!!');
     }
+
+    public close(): void {
+        this.pcOffer.close();
+        this.pcAnswer.close();
+    }
 }

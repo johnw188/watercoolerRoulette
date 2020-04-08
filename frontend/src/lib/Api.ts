@@ -25,9 +25,6 @@ export default class API {
         const xhr = new XMLHttpRequest();
 
         xhr.addEventListener('load', () => {
-          /* eslint-disable */
-          console.log(typeof xhr.response);
-          /* eslint-enable */
           resolve(xhr);
         });
 

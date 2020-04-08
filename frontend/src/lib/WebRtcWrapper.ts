@@ -17,6 +17,8 @@ export default class WebRtcWrapper {
 
     private webcamWaiter: Promise<MediaStream>;
 
+    private onMessage?: (event: MessageEvent) => void;
+
     constructor(identity: string) {
       this.identity = identity;
 
@@ -52,7 +54,10 @@ export default class WebRtcWrapper {
 
         this.pc.ondatachannel = (channelEvent) => {
           this.dcRecv = channelEvent.channel;
-          this.dcRecv.onmessage = (e) => this.log('Message RECV', e);
+          this.dcRecv.onmessage = (e) => {
+            if(this.onMessage)
+              this.onMessage(e);
+          };
           this.dcRecv.onopen = (e) => {
             this.log(` Open RECV:${e}`);
             resolve();
@@ -123,6 +128,10 @@ export default class WebRtcWrapper {
       if (this.dcSend) this.dcSend.send(message);
     }
 
+    public setOnMessage(handler: (event: MessageEvent) => void): void {
+      this.onMessage = handler;
+    }
+
     public async getStreams(): Promise<StreamPair> {
       const local = await this.webcamWaiter;
       this.log('Got local stream');
@@ -140,7 +149,6 @@ export default class WebRtcWrapper {
     }
 
     public close(): void {
-      this.pc.getTransceivers().forEach((tx) => { tx.stop(); });
       this.pc.close();
     }
 }

@@ -19,6 +19,8 @@ export default class WebRtcWrapper {
 
     private onMessage?: (event: MessageEvent) => void;
 
+    private onClosePromise: Promise<void>;
+
     constructor(identity: string) {
       this.identity = identity;
 
@@ -40,6 +42,12 @@ export default class WebRtcWrapper {
             this.log(`Completed Gathering candidates:${iceOptions.length}`);
             resolve(iceOptions);
           }
+        };
+      });
+
+      this.onClosePromise = new Promise((resolve) => {
+        this.pc.onsignalingstatechange = () => {
+          if (this.pc.connectionState === 'closed') resolve();
         };
       });
 
@@ -149,5 +157,9 @@ export default class WebRtcWrapper {
 
     public close(): void {
       this.pc.close();
+    }
+
+    public getClosePromise(): Promise<void> {
+      return this.onClosePromise;
     }
 }

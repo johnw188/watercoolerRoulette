@@ -98,6 +98,10 @@ export default class RtcPair {
     }
 
 
+    public async getClosePromise(): Promise<void> {
+      this.requirePC().getClosePromise();
+    }
+
     /**
      * Send a message to the peer that will be handled by the function
      * setup using `setOnMessage()`

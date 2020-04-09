@@ -87,7 +87,7 @@ export default class App extends Vue {
     });
     this.$refs.videoChat.onDisconnect = () => {
       this.matched = false;
-      this.runMatch();
+      // this.runMatch();
     };
   }
 }

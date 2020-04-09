@@ -100,7 +100,7 @@ def cleanup(event, context):
 
     removed = 0
     with models.MatchesModel.batch_write() as batch:
-        for n, record in enumerate(models.MatchesModel.scan(filter_condition=old_condition)):
+        for record in models.MatchesModel.scan(filter_condition=old_condition):
             logger.info(
                 "Removing record from user: ", record.user_id,
                 "aged:", datetime.datetime.utcnow() - record.created_dt)

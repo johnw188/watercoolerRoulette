@@ -132,9 +132,11 @@ def _do_concurrent_matches(concurrency: int, n_users: int):
 def test_answers():
     user1, user2 = models_testlib.create_fake_users("fakegroup-ans", 2)
 
+    match_id = str(uuid.uuid4())
     # Emulate the matching process having already finished
     match = models.MatchesModel(user1.group_id, user2.user_id)
-    match.match_id = user1.user_id
+    match.answerer_id = user1.user_id
+    match.match_id = match_id
     match.save()
 
     # Post an answer
@@ -142,19 +144,18 @@ def test_answers():
     result1 = lambdae.match.post_answer(
         {
             "headers": {"Cookie": "token=" + tokens.issue_token(user2)},
-            "body": json.dumps({"answer": answer})
+            "body": json.dumps({"answer": answer, "match_id": match_id})
         }, {})
 
     assert json.loads(result1["body"])["ok"]
 
     # Get the answer from the other side
-    result2 = lambdae.match.get_answer(
-        make_json_event(
+    event = make_json_event(
             body_json="",
             headers={"Cookie": "token=" + tokens.issue_token(user1)}
-        ),
-        {}
-    )
+        )
+    event["pathParameters"] = {"match_id": match_id}
+    result2 = lambdae.match.get_answer(event, {})
     response_body = json.loads(result2["body"])
 
     assert response_body["ok"]

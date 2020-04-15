@@ -145,24 +145,19 @@ def await_match(user: UsersModel, timeout_ms: int) -> MatchesModel:
     raise NoMatchException("Waited for %ims but no one proposed a match." % timeout_ms)
 
 
-def get_recent_matches(user: UsersModel):
-    
-    offered = MatchesModel.user_id == user.user_id
-    answered = MatchesModel.match_id == user.user_id
-    old_condition = MatchesModel.created_dt < (datetime.datetime.utcnow() - datetime.timedelta(minutes=60))
+def get_recent_matches(user: UsersModel) -> [str]:
+    TIME_LIMIT_CONDITION = MatchesModel.created_dt < (datetime.datetime.utcnow() - datetime.timedelta(minutes=20))
 
-    for match in MatchesModel.query(user.group_id, user.user_id)
-    models.
+    offered = MatchesModel.offerer_id == user.user_id
+    answered = MatchesModel.answerer_id == user.user_id
 
-    if(old_condition and (offered or answered)):
-        pass
+    previous_partners = []
+    # Matches where I was the offerer
+    for match in MatchesModel.scan(user.group_id, filter_condition=offered & TIME_LIMIT_CONDITION):
+        previous_partners.append(match.answerer_id)
 
-    removed = 0
-    with models.MatchesModel.batch_write() as batch:
-        for record in models.MatchesModel.scan(filter_condition=old_condition):
-            logger.info(
-                "Removing record from user: ", record.user_id,
-                "aged:", datetime.datetime.utcnow() - record.created_dt)
-            batch.delete(record)
-            removed += 1
-            logger.info("Removed.")
+    # Matches where I was the answerer
+    for match in MatchesModel.scan(user.group_id, filter_condition=answered & TIME_LIMIT_CONDITION):
+        previous_partners.append(match.offerer_id)
+
+    return previous_partners

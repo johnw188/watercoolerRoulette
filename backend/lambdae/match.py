@@ -18,8 +18,12 @@ def get_timeout_rec_ms():
     return int(random.uniform(500, 2000))
 
 
-def match_id_to_response(match_id: str, offer: dict, offerer: bool) -> dict:
-    return shared.json_success_response({"match_id": match_id, "offer": offer, "offerer": offerer})
+def match_id_to_response(partner: str, match_id: str, offer: dict, offerer: bool) -> dict:
+    return shared.json_success_response({
+        "partner": partner,
+        "match_id": match_id,
+        "offer": offer,
+        "offerer": offerer})
 
 
 def timeout_response(timeout_ms: int = None):
@@ -46,15 +50,15 @@ def match(event, context):
     try:
         match = models.MatchesModel.get(user.group_id, user.user_id)
         match.delete()
-        logger.warning(user.user_id + " found hanging match record.")
+        logger.warning(user.answerer_id + " found hanging match record.")
         return timeout_response(5000)
     except models.MatchesModel.DoesNotExist:
         pass
 
     try:
         match = models.propose_match(user, offer)
-        logger.info("Successful proposal to: " + match.user_id)
-        return match_id_to_response(match.user_id, offer, True)
+        logger.info("Successful proposal to: " + match.answerer_id)
+        return match_id_to_response(match.answerer_id, match.match_id, offer, True)
     except models.NoMatchException as e:
         logger.info("No luck proposing a match: " + e.msg)
 
@@ -62,7 +66,7 @@ def match(event, context):
     time_to_await_match_ms = max(0, time_to_await_match_ms)
     try:
         match = models.await_match(user, time_to_await_match_ms)
-        return match_id_to_response(match.match_id, json.loads(match.offer), False)
+        return match_id_to_response(match.offerer_id, match.match_id, json.loads(match.offer), False)
     except models.NoMatchException as e:
         logger.info("No luck after waiting: " + e.msg)
 
@@ -72,23 +76,26 @@ def match(event, context):
 @shared.json_request
 def post_answer(event, context):
     user = tokens.require_authorization(event)
-    print("Post answer for user_id:" + user.user_id)
-    match = models.MatchesModel.get(user.group_id, user.user_id, consistent_read=True)
-    answer_object = json.loads(event["body"])["answer"]
 
-    match.update(actions=[models.MatchesModel.answer.set(json.dumps(answer_object))])
+    event_dict = json.loads(event["body"])
+    match_id = event_dict["match_id"]
+    match = models.MatchesModel.get(user.group_id, match_id, consistent_read=True)
+    
+    print("Post answer for user_id:" + user.user_id)
+    answer_object = json.loads(event["body"])["answer"]
+    match.answer = json.dumps(answer_object)
+    match.save()
+    
     return shared.json_success_response({})
 
 
 @shared.json_request
 def get_answer(event, context):
     user = tokens.require_authorization(event)
-    print("Get answer for user_id:" + user.user_id)
-    matches_match_id = models.MatchesModel.match_id == user.user_id
-    try:
-        match = next(models.MatchesModel.query(user.group_id, filter_condition=matches_match_id, consistent_read=True))
-    except StopIteration:
-        return shared.json_error_response(message="No match record found", code=404)
+
+    match_id = event["pathParameters"]["match_id"]
+    match = models.MatchesModel.get(user.group_id, match_id, consistent_read=True)
+
     print("Match answer raw:" + str(match.answer))
     answer = json.loads(match.answer) if match.answer is not None else None
     return shared.json_success_response({"answer": answer})

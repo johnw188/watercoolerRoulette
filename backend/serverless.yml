@@ -81,7 +81,7 @@ functions:
     handler: lambdae/match.get_answer
     events:
       - http:
-          path: answer
+          path: answer/{match_id}
           method: get
           cors: true # <-- CORS!
 

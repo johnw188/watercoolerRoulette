@@ -6,6 +6,7 @@ interface MatchResult {
     partner: string;
     offer: OfferIce;
     offerer: boolean;
+    match_id: string;
 }
 
 
@@ -78,20 +79,20 @@ export default class API {
       /* eslint-enable */
     }
 
-    public static async postAnswerIce(answer: AnswerIce): Promise<void> {
-      API.xhrPromise('POST', API.ANSWER_URL, { answer });
+    public static async postAnswerIce(match_id: string, answer: AnswerIce): Promise<void> {
+      API.xhrPromise('POST', API.ANSWER_URL, { match_id,  answer });
     }
 
-    public static async getAnswerIceAttempt(): Promise<AnswerIce> {
+    public static async getAnswerIceAttempt(match_id: string): Promise<AnswerIce> {
       return new Promise((resolve) => {
-        API.xhrPromise('GET', API.ANSWER_URL).then((xhr: XMLHttpRequest) => {
+        API.xhrPromise('GET', API.ANSWER_URL + "/" + match_id).then((xhr: XMLHttpRequest) => {
           resolve(xhr.response.answer);
         });
       });
     }
 
-    public static async getAnswerIce(timeoutMS = 10000): Promise<AnswerIce> {
-      let answer = await this.getAnswerIceAttempt();
+    public static async getAnswerIce(match_id: string, timeoutMS = 10000): Promise<AnswerIce> {
+      let answer = await this.getAnswerIceAttempt(match_id);
 
       const startTime = +new Date();
 
@@ -101,7 +102,7 @@ export default class API {
           throw new Error("Timeout while awaiting answer.")
         }
         await API.wait(555);
-        answer = await this.getAnswerIceAttempt();
+        answer = await this.getAnswerIceAttempt(match_id);
       }
       /* eslint-enable */
       return answer;

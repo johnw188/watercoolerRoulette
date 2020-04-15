@@ -23,7 +23,7 @@ export default class ChatInteraction {
       if (match.offerer) {
         update('Match is using my offer, waiting for their answer');
         await API.wait(200); // They have to post first
-        const answerIce = await API.getAnswerIce();
+        const answerIce = await API.getAnswerIce(match.match_id);
         update('Answer received.');
         await rtcPair.setAnswerIce(answerIce);
         update('Setup complete, waiting on remote stream to start');
@@ -31,7 +31,7 @@ export default class ChatInteraction {
         update('Using their offer, crafting my answer');
         const answerIce = await rtcPair.offerIceToAnswerIce(match.offer);
         update('Posting answer');
-        await API.postAnswerIce(answerIce);
+        await API.postAnswerIce(match.match_id, answerIce);
         update('Answer posted waiting on remote stream to start');
       }
 

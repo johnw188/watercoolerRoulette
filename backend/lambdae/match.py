@@ -18,8 +18,8 @@ def get_timeout_rec_ms():
     return int(random.uniform(500, 2000))
 
 
-def match_id_to_response(partner: str, offer: dict, offerer: bool) -> dict:
-    return shared.json_success_response({"partner": partner, "offer": offer, "offerer": offerer})
+def match_id_to_response(match_id: str, offer: dict, offerer: bool) -> dict:
+    return shared.json_success_response({"match_id": match_id, "offer": offer, "offerer": offerer})
 
 
 def timeout_response(timeout_ms: int = None):

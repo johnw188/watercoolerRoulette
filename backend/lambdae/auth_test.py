@@ -5,7 +5,7 @@ import lambdae.jwt_tokens as tokens
 TEST_CODE = "123456"
 
 
-def fake_slack_oauth(code: str):
+def fake_oauth_result(code: str):
     assert code == TEST_CODE
     return dict(
         group_id="FAKETEAMID",
@@ -18,11 +18,11 @@ def fake_slack_oauth(code: str):
     )
 
 
-def test_auth_basic():
+def test_auth_slack():
     result = auth.slack_oauth(
         {"queryStringParameters": {"code": TEST_CODE}},
         {},
-        slack_oauth_call=fake_slack_oauth) # Mocks out the actual oauth work
+        slack_oauth_call=fake_oauth_result)  # Mocks out the actual oauth work
 
     assert result["statusCode"] == 302
     headers = result["headers"]
@@ -31,6 +31,23 @@ def test_auth_basic():
 
     # This tests both that the issued cookie is valid, and that the user entry was made
     tokens.require_authorization({"headers": {"Cookie": cookie}})
+
+
+def test_auth_google():
+    result = auth.google_oauth(
+        {"queryStringParameters": {"code": TEST_CODE}},
+        {},
+        google_oauth_call=fake_oauth_result)  # Mocks out the actual oauth work
+
+    assert result["statusCode"] == 302
+    headers = result["headers"]
+    assert headers["Location"] == auth.AFTER_AUTH_REDIRECT
+    cookie = headers["Set-Cookie"]
+
+    # This tests both that the issued cookie is valid, and that the user entry was made
+    tokens.require_authorization({"headers": {"Cookie": cookie}})
+
+
 
 
 def test_error_param():

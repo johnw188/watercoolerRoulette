@@ -3,6 +3,7 @@ import json
 import os
 import random
 import time
+import uuid
 
 import lambdae.shared as shared
 
@@ -66,9 +67,10 @@ class MatchesModel(AbstractTimestampedModel):
             region = "us-west-2"
 
     group_id = UnicodeAttribute(hash_key=True, null=False)
-    user_id = UnicodeAttribute(range_key=True, null=False)
+    match_id = UnicodeAttribute(range_key=True, null=False)
 
-    match_id = UnicodeAttribute(null=True)
+    offerer_id = UnicodeAttribute(null=True)
+    answerer_id = UnicodeAttribute(null=False)
     offer = UnicodeAttribute(null=True)
     answer = UnicodeAttribute(null=True)
 
@@ -79,14 +81,14 @@ def propose_match(user: UsersModel, offer: dict) -> MatchesModel:
     On success: return the match record
     On failure: raise a NoMatchException
     """
-    HAS_NO_MATCH = MatchesModel.match_id.does_not_exist()
+    HAS_NO_MATCH = MatchesModel.offerer_id.does_not_exist()
 
     # Get the unmatched people in my group, and shuffle them
     potential_matches = list(MatchesModel.query(user.group_id, filter_condition=HAS_NO_MATCH))
     random.shuffle(potential_matches)
 
     count = 0
-    actions = [MatchesModel.match_id.set(user.user_id), MatchesModel.offer.set(json.dumps(offer))]
+    actions = [MatchesModel.offerer_id.set(user.user_id), MatchesModel.offer.set(json.dumps(offer))]
     for potential_match in potential_matches:
         try:
             potential_match.update(actions=actions, condition=HAS_NO_MATCH)
@@ -108,8 +110,9 @@ def await_match(user: UsersModel, timeout_ms: int) -> MatchesModel:
     # No luck matching to someone else, so put my record in the table, and wait on it
     waiting_match = MatchesModel(
         group_id=user.group_id,
-        user_id=user.user_id,
-        match_id=None,
+        match_id=str(uuid.uuid4()),
+        offerer_id=None,
+        answerer_id=user.user_id,
         offer=None,
         answer=None
     )
@@ -123,13 +126,13 @@ def await_match(user: UsersModel, timeout_ms: int) -> MatchesModel:
             raise NoMatchException("Match record deleted before await completed.")
 
         # Success condition
-        if waiting_match.match_id is not None:
+        if waiting_match.offerer_id is not None:
             return waiting_match
         time.sleep(INTERVAL_MS / 1000)
 
     # Try to delete the match record, but only if unmatched
     try:
-        waiting_match.delete(condition=MatchesModel.match_id.does_not_exist())
+        waiting_match.delete(condition=MatchesModel.offerer_id.does_not_exist())
     except pynamodb.exceptions.DeleteError:
         try:
             waiting_match.refresh(consistent_read=True)
@@ -140,3 +143,26 @@ def await_match(user: UsersModel, timeout_ms: int) -> MatchesModel:
         return waiting_match
 
     raise NoMatchException("Waited for %ims but no one proposed a match." % timeout_ms)
+
+
+def get_recent_matches(user: UsersModel):
+    
+    offered = MatchesModel.user_id == user.user_id
+    answered = MatchesModel.match_id == user.user_id
+    old_condition = MatchesModel.created_dt < (datetime.datetime.utcnow() - datetime.timedelta(minutes=60))
+
+    for match in MatchesModel.query(user.group_id, user.user_id)
+    models.
+
+    if(old_condition and (offered or answered)):
+        pass
+
+    removed = 0
+    with models.MatchesModel.batch_write() as batch:
+        for record in models.MatchesModel.scan(filter_condition=old_condition):
+            logger.info(
+                "Removing record from user: ", record.user_id,
+                "aged:", datetime.datetime.utcnow() - record.created_dt)
+            batch.delete(record)
+            removed += 1
+            logger.info("Removed.")
